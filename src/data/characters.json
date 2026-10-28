@@ -1,0 +1,63 @@
+{
+  "project_name": "Toronto Survival Simulator",
+  "data_type": "characters",
+  "classes": [
+    {
+      "class_id": "mississauga_commuter",
+      "display_name": "The Mississauga Commuter",
+      "starting_stats": {
+        "cash": 1500,
+        "sanity": 70,
+        "health": 80
+      },
+      "passive_modifiers": {
+        "ttc_delay_multiplier": 1.5,
+        "weather_drain_multiplier": 1.0
+      },
+      "starting_inventory": [
+        "Presto Card",
+        "Surge Espresso"
+      ],
+      "description": "PLACEHOLDER: two GO trains and a bus before your day even starts.",
+      "home_location": "Mississauga"
+    },
+    {
+      "class_id": "financial_district_intern",
+      "display_name": "The Financial District Intern",
+      "starting_stats": {
+        "cash": 2500,
+        "sanity": 55,
+        "health": 75
+      },
+      "passive_modifiers": {
+        "ttc_delay_multiplier": 1.0,
+        "weather_drain_multiplier": 1.2
+      },
+      "starting_inventory": [
+        "Surge Espresso"
+      ],
+      "description": "PLACEHOLDER: unpaid hustle on Bay Street, dry-clean bills on you.",
+      "home_location": "Financial District"
+    },
+    {
+      "class_id": "campus_residence_dweller",
+      "display_name": "The Campus Residence Dweller",
+      "starting_stats": {
+        "cash": 800,
+        "sanity": 85,
+        "health": 90
+      },
+      "passive_modifiers": {
+        "ttc_delay_multiplier": 0.8,
+        "weather_drain_multiplier": 0.8
+      },
+      "starting_inventory": [
+        "Presto Card",
+        "Meal Plan",
+        "Surge Espresso"
+      ],
+      "description": "PLACEHOLDER: ramen, deadlines, and a five-minute walk to class.",
+      "home_location": "U of T Residence"
+    }
+  ]
+}

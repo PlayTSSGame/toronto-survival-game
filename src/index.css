@@ -1,0 +1,30 @@
+@import '@fontsource/lilita-one/latin-400.css';
+@import '@fontsource/nunito/latin-700.css';
+@import '@fontsource/nunito/latin-900.css';
+
+:root {
+  color-scheme: dark;
+  --bg: #121212;
+  --ink: #121212;
+  --card: #1F1F2B;
+  --red: #FF3B30;
+  --yellow: #FFD23F;
+  --mint: #2EE6A6;
+  --sky: #4CC9F0;
+  --pink: #FF6FB5;
+  --display: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif;
+  font: 700 16px/1.4 'Nunito', system-ui, sans-serif;
+  background: var(--bg);
+  color: #FFFFFF;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background-color: var(--bg);
+  /* faint halftone dots */
+  background-image: radial-gradient(rgba(255,255,255,.06) 1.5px, transparent 1.6px);
+  background-size: 18px 18px;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

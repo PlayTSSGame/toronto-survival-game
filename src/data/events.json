@@ -1,0 +1,436 @@
+{
+  "project_name": "Toronto Survival Simulator",
+  "build_version": "1.0.0",
+  "events_catalog": [
+    {
+      "event_id": "TSS_ACT1_001_TTC_BLIZZARD",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 10,
+      "scenario_text": "An unpredicted mid-morning blizzard hits the GTA. The TTC Line 1 is entirely suspended between Bloor-Yonge and Union.",
+      "api_dependencies": {
+        "weather_severity_key": "env_canada_snow_cm",
+        "transit_delay_key": "ttc_subway_delay_mins"
+      },
+      "choice_a": {
+        "action_text": "Order an immediate surge-priced rideshare down to the Financial District.",
+        "metrics_impact": {
+          "cash_modifier": -65.0,
+          "sanity_modifier": 10,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Wait outside on the platform for an overcrowded surface shuttle bus.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -25,
+          "health_modifier": -15,
+          "turns_consumed": 2
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_002_LOBLAWS_RUN",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 10,
+      "scenario_text": "You run into a local supermarket for exactly three basic grocery items, but grocery math hits you hard at the checkout counter.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Suck it up, pay the ridiculous $52 balance, and lose your meal prep liquidity.",
+        "metrics_impact": {
+          "cash_modifier": -52.0,
+          "sanity_modifier": -10,
+          "health_modifier": 15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Leave the basket at the aisle, walk out empty-handed, and eat instant noodles instead.",
+        "metrics_impact": {
+          "cash_modifier": -5.0,
+          "sanity_modifier": 15,
+          "health_modifier": -20,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_003_PRESTO_DRAIN",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 10,
+      "scenario_text": "You tap your Presto card at the turnstile and hear a loud double-beep. Your balance is deeply in the negative.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Execute an immediate phone top-up of $30 via your clearing account.",
+        "metrics_impact": {
+          "cash_modifier": -30.0,
+          "sanity_modifier": 5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Evade the gate smoothly. Risk getting caught by fare inspectors to save the cash.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -15,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_004_YORK_SHUTTLE",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 10,
+      "scenario_text": "The inter-campus shuttle bus is completely full, and the outdoor lineup stretching past the sidewalk is moving at zero speed.",
+      "api_dependencies": {
+        "weather_severity_key": "env_canada_temp_c",
+        "transit_delay_key": "go_transit_delay_mins"
+      },
+      "choice_a": {
+        "action_text": "Pay for a local GO Transit train ticket to bypass the student freeze.",
+        "metrics_impact": {
+          "cash_modifier": -9.75,
+          "sanity_modifier": 15,
+          "health_modifier": 5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Stand in the freezing wind for another 45 minutes to preserve your liquidity.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -20,
+          "health_modifier": -15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_005_EATON_SPEND",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 10,
+      "scenario_text": "You walk through the Eaton Centre to kill time between classes and find a massive pop-up clearance sale on local brand apparel.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Splurge $85 on a sleek hoodie to fit in with the local campus culture.",
+        "metrics_impact": {
+          "cash_modifier": -85.0,
+          "sanity_modifier": 25,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Keep your eyes locked on the floor, walk straight past, and drink free tap water.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -10,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_006_MIDTERM_CRUNCH",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 20,
+      "scenario_text": "It is 11:30 PM. Your major midterm exam is in exactly 9 hours and you have only reviewed 2 out of 11 heavy slide decks.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Consume your inventory Surge Espresso, pull an all-nighter, and force-memorize the slides.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -35,
+          "health_modifier": -20,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": "Surge Espresso"
+      },
+      "choice_b": {
+        "action_text": "Get 8 hours of premium sleep, wing the exam completely, and accept whatever grade drops.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": 15,
+          "health_modifier": 15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_007_TIM_HORTONS_LINE",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 20,
+      "scenario_text": "The campus Tim Hortons line has 40 people in it, and your lecture starts in 10 minutes. Your brain desperately demands caffeine.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Skip the lecture completely to secure your breakfast wrap and double-double.",
+        "metrics_impact": {
+          "cash_modifier": -8.5,
+          "sanity_modifier": 15,
+          "health_modifier": 5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Sprint to the lecture hall empty-handed. Endure a 3-hour academic briefing with zero focus.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -25,
+          "health_modifier": -10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_008_DUNDAS_SQUARE",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 20,
+      "scenario_text": "As you exit Yonge-Dundas station, an aggressive street marketer approaches you trying to block your path with a clipboard entry form.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Make awkward eye contact, listen to their pitch for 15 minutes, and miss your connection.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -20,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Deploy your Mississauga Commuter passive edge, pretend you are blind, and walk straight through.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": 10,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_009_WIFI_COLLAPSE",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 20,
+      "scenario_text": "The campus Eduroam Wi-Fi network completely collapses right in the middle of your timed online quiz submission window.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Instantly switch on your phone's premium 5G data hotspot to save the submission score.",
+        "metrics_impact": {
+          "cash_modifier": -15.0,
+          "sanity_modifier": -5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Stare at the loading icon in pure panic. Let the session timeout and email your prof later.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -35,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "PLACEHOLDER_a2_slot10_awaiting_client",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 20,
+      "scenario_text": "PLACEHOLDER: Stand-in for TSS_ACT2_010_TEXTBOOK_PAYWALL, whose paste was cut off after choice_a.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Pay the $125 portal fee",
+        "metrics_impact": {
+          "cash_modifier": -125.0,
+          "sanity_modifier": -15,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Share a friend's code",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -20,
+          "health_modifier": -3,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "PLACEHOLDER_a3_rent_due",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 30,
+      "scenario_text": "PLACEHOLDER: Rent is due and the landlord is not feeling generous.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Pay in full",
+        "metrics_impact": {
+          "cash_modifier": -700,
+          "sanity_modifier": -2,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Negotiate a payment plan",
+        "metrics_impact": {
+          "cash_modifier": -300,
+          "sanity_modifier": -12,
+          "health_modifier": -3,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "PLACEHOLDER_a3_ice_storm",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 30,
+      "scenario_text": "PLACEHOLDER: An ice storm glazes the whole city. Streets are chaos.",
+      "api_dependencies": {
+        "weather_severity_key": "weather_severity_index"
+      },
+      "choice_a": {
+        "action_text": "Stay home, order in",
+        "metrics_impact": {
+          "cash_modifier": -35,
+          "sanity_modifier": -3,
+          "health_modifier": -4,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Brave it to work",
+        "metrics_impact": {
+          "cash_modifier": 120,
+          "sanity_modifier": -8,
+          "health_modifier": -14,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "PLACEHOLDER_a3_ttc_delay",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 30,
+      "scenario_text": "PLACEHOLDER: A delayed line makes for a tense morning.",
+      "api_dependencies": {
+        "transit_delay_key": "ttc_delay_minutes"
+      },
+      "choice_a": {
+        "action_text": "Take the delay",
+        "metrics_impact": {
+          "cash_modifier": 0,
+          "sanity_modifier": -11,
+          "health_modifier": -2,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Cab it",
+        "metrics_impact": {
+          "cash_modifier": -85,
+          "sanity_modifier": 2,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "PLACEHOLDER_a3_big_opportunity",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 30,
+      "scenario_text": "PLACEHOLDER: A recruiter offers a short, high-paying contract. Risky.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Sign it",
+        "metrics_impact": {
+          "cash_modifier": 600,
+          "sanity_modifier": -10,
+          "health_modifier": -8,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Decline",
+        "metrics_impact": {
+          "cash_modifier": 0,
+          "sanity_modifier": 5,
+          "health_modifier": 3,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "PLACEHOLDER_a3_final_push",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 30,
+      "scenario_text": "PLACEHOLDER: One last bad week before month end. You need a lift.",
+      "api_dependencies": null,
+      "choice_a": {
+        "action_text": "Grind through",
+        "metrics_impact": {
+          "cash_modifier": 150,
+          "sanity_modifier": -10,
+          "health_modifier": -9,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Treat yourself to a meal",
+        "metrics_impact": {
+          "cash_modifier": -40,
+          "sanity_modifier": 10,
+          "health_modifier": 8,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": "Meal Plan"
+      }
+    }
+  ]
+}
