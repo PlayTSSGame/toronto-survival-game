@@ -1,21 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { actForTurn, canChoose, TOTAL_TURNS, timeLabel } from './engine/game'
 import { computeRank, copyText, outcomeTitle, shareText } from './engine/rank'
 import type { CharacterClass, Environment, FeedSource, GameState } from './types'
-import { Avatar, Bolt, Coin, Heart, Skyline } from './ui/Art'
+import { Avatar, Bolt, Coin, Heart, HeroLife, Skyline } from './ui/Art'
+import { Count } from './ui/Count'
+import { Doors } from './ui/Doors'
+import { makeResultPng, saveOrShare } from './ui/shareImage'
+import { SettingsPanel } from './ui/SettingsPanel'
+import { useSettings } from './ui/settings'
+import { playSfx, vibrate } from './ui/sound'
+import { moodFor } from './ui/mood'
+import { kindOf, type Kind } from './ui/kinds'
+import { RankBadge } from './ui/Badges'
+import { CityMap } from './ui/CityMap'
+import { Backdrop, Burst, Confetti, Sky } from './ui/Fx'
+import { ItemIcon } from './ui/Items'
+import { Scene } from './ui/Scenes'
+import { TrainIcon, WeatherIcon } from './ui/Weather'
 import { useGame } from './ui/useGame'
 import './App.css'
 
 const SPONSOR_URL = import.meta.env.VITE_SPONSOR_URL || 'https://forms.google.com'
 
 /** Each survivor owns a colour that tints their cards. */
-const THEME: Record<string, string> = {
-  mississauga_commuter: '#4CC9F0',
-  financial_district_intern: '#FFD23F',
-  campus_residence_dweller: '#2EE6A6',
-}
+const THEME: Record<Kind, string> = { commuter: '#4CC9F0', intern: '#FFD23F', campus: '#2EE6A6', other: '' }
 const SPARE = ['#FF6FB5', '#FF9F43']
-const themeOf = (id: string, i = 0) => THEME[id] ?? SPARE[i % SPARE.length]
+const themeOf = (id: string, i = 0) => THEME[kindOf(id)] || SPARE[i % SPARE.length]
 
 const ACTS = [
   { name: 'Act 1', note: 'Settling in', color: '#2EE6A6' },
@@ -59,11 +69,12 @@ function Segs({ value, color }: { value: number; color: string }) {
   )
 }
 
-function Chip({ label, text, src, bad }: { label: string; text: string; src: FeedSource; bad: boolean }) {
+function Chip({ icon, label, text, src, bad }: { icon: React.ReactNode; label: string; text: string; src: FeedSource; bad: boolean }) {
   return (
     <span className={`chip${bad ? ' bad' : ''}`} title={src === 'live' ? 'Live data' : src === 'cached' ? 'Saved data' : 'Offline fallback'}>
+      {icon}
       <i className={`pip ${src}`} aria-hidden="true" />
-      <b>{label}</b> {text.replace(/^(Weather|TTC):? ?/, '').replace(/ \(saved\)$/, '')}
+      <span className="sr">{label} </span>{text.replace(/^(Weather|TTC):? ?/, '').replace(/ \(saved\)$/, '')}
     </span>
   )
 }
@@ -75,8 +86,9 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
   const theme = themeOf(char.class_id, index)
   return (
     <header className="hud" style={{ '--theme': theme } as React.CSSProperties}>
+      <Sky day={day} />
       <div className="hud-top">
-        <div className="face"><Avatar id={char.class_id} size={46} /></div>
+        <div className="face"><Avatar id={char.class_id} size={46} mood={moodFor(sanity)} hurt={health < 30} /></div>
         <div className="who">
           <strong>{char.display_name}</strong>
           <span>{place}</span>
@@ -91,17 +103,17 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
         <div className={`stat cash${cash < 0 ? ' neg' : ''}`}>
           <Coin size={26} />
           <div>
-            <b>{money(cash)}</b>
+            <b><Count value={cash} format={money} /></b>
             {cash < 0 && <small>OVERDRAFT</small>}
           </div>
         </div>
-        <div className="stat">
+        <div className={`stat${sanity <= 20 ? ' jitter' : ''}`}>
           <Bolt size={26} />
-          <div><b>{sanity}</b><Segs value={sanity} color="#4CC9F0" /></div>
+          <div><b><Count value={sanity} format={(n) => String(Math.round(n))} /></b><Segs value={sanity} color="#4CC9F0" /></div>
         </div>
-        <div className="stat">
+        <div className={`stat${health <= 20 ? ' beat' : ''}`}>
           <Heart size={26} />
-          <div><b>{health}</b><Segs value={health} color="#FF6FB5" /></div>
+          <div><b><Count value={health} format={(n) => String(Math.round(n))} /></b><Segs value={health} color="#FF6FB5" /></div>
         </div>
       </div>
 
@@ -111,8 +123,8 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
         <Track turn={state.turn} />
       </div>
       <div className="chips">
-        <Chip label="Weather" text={env.weatherLabel} src={env.weatherSource} bad={env.tempC < 0 || env.precipMm > 5} />
-        <Chip label="TTC" text={env.transitLabel} src={env.transitSource} bad={env.delayMinutes > 15} />
+        <Chip icon={<WeatherIcon tempC={env.tempC} precipMm={env.precipMm} />} label="Weather" text={env.weatherLabel} src={env.weatherSource} bad={env.tempC < 0 || env.precipMm > 5} />
+        <Chip icon={<TrainIcon delayed={env.delayMinutes > 15} />} label="TTC" text={env.transitLabel} src={env.transitSource} bad={env.delayMinutes > 15} />
       </div>
     </header>
   )
@@ -120,6 +132,14 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
 
 function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) {
   const [msg, setMsg] = useState('')
+  const saveImage = async () => {
+    try {
+      const blob = await makeResultPng(state, computeRank(state), outcomeTitle(state), window.location.origin + window.location.pathname)
+      setMsg((await saveOrShare(blob)) === 'shared' ? 'Shared!' : 'Image saved.')
+    } catch {
+      setMsg('Could not create the image on this browser.')
+    }
+  }
   const lost = state.status === 'lost'
   const share = async () => {
     const text = shareText(state, window.location.origin + window.location.pathname)
@@ -127,7 +147,9 @@ function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) 
   }
   return (
     <section className={`end ${lost ? 'lost' : 'won'}`}>
+      {!lost && <Confetti />}
       <p className="banner">{lost ? 'Game over' : 'You made it!'}</p>
+      <RankBadge rank={computeRank(state)} />
       <p className="ranklab">Your rank</p>
       <h2 className="rank">{computeRank(state)}</h2>
       <p className="outcome">{outcomeTitle(state)}</p>
@@ -139,6 +161,7 @@ function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) 
       </div>
       <button className="key key-red wide" onClick={onReset}>{lost ? 'Try again' : 'Play again'}</button>
       <button className="key key-sky wide" onClick={share}>Copy result</button>
+      <button className="key key-mint wide" onClick={saveImage}>Save image</button>
       {msg && <p className="toast" role="status">{msg}</p>}
     </section>
   )
@@ -147,11 +170,45 @@ function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) 
 export default function App() {
   const { error, characters, state, char, event, env, start, choose, next, reset } = useGame()
   const index = char ? characters.findIndex((c) => c.class_id === char.class_id) : 0
+  const [showMap, setShowMap] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [settings, updateSettings] = useSettings()
+  const act = state ? ACTS[actForTurn(state.turn) - 1] : ACTS[1]
+  const res = state?.lastResult?.delta
+  const loss = !!res && (res.sanity < 0 || res.health < 0)
+  const gain = !!res && (res.sanity > 0 || res.health > 0 || res.cash > 0)
+  const place = event?.location ?? char?.home_location ?? ''
+  const status = state?.status
+  const turn = state?.turn
+  const lowVitals = !!state && state.status === 'playing' && (state.stats.sanity <= 20 || state.stats.health <= 20)
+
+  // Sound and haptics follow what just happened.
+  const lastResult = state?.lastResult
+  useEffect(() => {
+    if (!lastResult) return
+    const d = lastResult.delta
+    if (d.sanity < 0 || d.health < 0) { playSfx('hit'); vibrate([80, 40, 80]) }
+    else if (d.cash > 0) { playSfx('coin'); vibrate(30) }
+    else if (d.sanity > 0 || d.health > 0) { playSfx('good'); vibrate(30) }
+  }, [lastResult])
+  const prevTurn = useRef(turn)
+  useEffect(() => {
+    if (turn !== undefined && prevTurn.current !== turn) playSfx('doors')
+    prevTurn.current = turn
+  }, [turn])
+  useEffect(() => {
+    if (status === 'finished') { playSfx('win'); vibrate([60, 40, 60, 40, 140]) }
+    if (status === 'lost') { playSfx('lose'); vibrate(220) }
+  }, [status])
+
   const days = event && state?.lastResult ? event[state.lastResult.choiceKey].metrics_impact.turns_consumed : 1
 
   return (
-    <div className="app">
-      {state && char && <Hud state={state} char={char} env={env} place={event?.location ?? char.home_location} index={index} />}
+    <div className="app" data-act={state ? actForTurn(state.turn) : 0} style={{ '--act': act.color } as React.CSSProperties}>
+      <Backdrop />
+      {state && <Doors key={`${state.turn}-${state.characterId}`} />}
+      {lowVitals && <div className="vignette" aria-hidden="true" />}
+      {state && char && <Hud state={state} char={char} env={env} place={place} index={index} />}
 
       <main className="main">
         {error && <p role="alert" className="notice">Game content failed to load: {error}</p>}
@@ -160,6 +217,7 @@ export default function App() {
           <section className="intro">
             <div className="hero">
               <Skyline />
+              <HeroLife />
               <h1>
                 <span className="w1">Toronto</span>
                 <span className="w2">Survival</span>
@@ -191,10 +249,12 @@ export default function App() {
         {(state?.status === 'lost' || state?.status === 'finished') && <EndCard state={state} onReset={reset} />}
 
         {state?.status === 'playing' && (
-          <section className="event" key={`${state.turn}-${state.lastResult ? 'r' : 'q'}`}>
+          <section className={`event${state.lastResult && loss ? ' hit' : ''}`} key={`${state.turn}-${state.lastResult ? 'r' : 'q'}`}>
+            {state.lastResult && (loss || gain) && <Burst gain={gain} loss={loss} hurtHealth={!!res && res.health < 0} />}
             {event ? (
               <>
                 <div className="card">
+                  <Scene event={event} />
                   <p className="narrative">{event.scenario_text.replace(/^PLACEHOLDER:\s*/, '')}</p>
                   {(event.api_dependencies?.transit_delay_key || event.api_dependencies?.weather_severity_key) && (
                     <p className="affects">
@@ -217,7 +277,7 @@ export default function App() {
                       const c = event[k]
                       const ok = canChoose(state, c)
                       return (
-                        <button key={k} className={`key choice ${k === 'choice_a' ? 'key-yellow' : 'key-mint'}`} disabled={!ok} onClick={() => choose(k)}>
+                        <button key={k} className={`key choice ${k === 'choice_a' ? 'key-yellow' : 'key-mint'}`} disabled={!ok} onClick={() => { playSfx('click'); choose(k) }}>
                           <b className="letter">{k === 'choice_a' ? 'A' : 'B'}</b>
                           <span className="ctext">
                             {c.action_text}
@@ -241,15 +301,24 @@ export default function App() {
 
         {state?.status === 'playing' && (
           <div className="foot-row">
-            <p className="bag"><b>Bag:</b> {state.inventory.length ? state.inventory.map((i) => <span key={i} className="item">{i}</span>) : 'empty'}</p>
-            <button className="link" onClick={reset}>Quit run</button>
+            <p className="bag"><b>Bag:</b> {state.inventory.length ? state.inventory.map((i) => <span key={i} className="item"><ItemIcon name={i} size={20} />{i}</span>) : 'empty'}</p>
+            <span className="tools">
+              <button className="link" onClick={() => setShowMap((v) => !v)} aria-expanded={showMap}>{showMap ? 'Hide map' : 'Map'}</button>
+              <button className="link" onClick={reset}>Quit run</button>
+            </span>
           </div>
         )}
+
+        {state?.status === 'playing' && showMap && <CityMap place={place} />}
+
       </main>
 
       <footer className="footer">
+        <button className="link" onClick={() => setShowSettings(true)}>Settings</button>
+        <span aria-hidden="true"> · </span>
         <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer">Sponsor this game</a>
       </footer>
+      {showSettings && <SettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
     </div>
   )
 }

@@ -41,6 +41,25 @@ describe('validation', () => {
   })
 })
 
+describe('characters.json as delivered', () => {
+  it('reads inventory from starting_stats and ttc_delay_impact', () => {
+    expect(chars.map((c) => c.class_id)).toEqual(['CLASS_001_COMMUTER', 'CLASS_002_INTERN', 'CLASS_003_CAMPUS_RES'])
+    expect(chars[0].starting_stats).toMatchObject({ cash: 40, sanity: 85, health: 90 })
+    expect(chars[0].starting_inventory).toEqual(['Presto Card'])
+    expect(chars[1].starting_inventory).toEqual(['Corporate Lanyard', 'Surge Espresso'])
+    expect(chars.map((c) => c.passive_modifiers.ttc_delay_multiplier)).toEqual([1.25, 1, 0.5])
+    expect(chars.map((c) => c.passive_modifiers.weather_drain_multiplier)).toEqual([1, 1.15, 0.75])
+  })
+  it('still accepts the legacy field names', () => {
+    const legacy = structuredClone(charactersRaw) as any
+    legacy.classes[0].starting_inventory = ['X']
+    legacy.classes[0].passive_modifiers = { ttc_delay_multiplier: 2, weather_drain_multiplier: 1 }
+    const c = parseCharacters(legacy).classes[0]
+    expect(c.starting_inventory).toEqual(['X'])
+    expect(c.passive_modifiers.ttc_delay_multiplier).toBe(2)
+  })
+})
+
 describe('turn engine', () => {
   it('picks events deterministically and only within turn range', () => {
     const s = newGame(commuter, 42)
@@ -66,10 +85,12 @@ describe('turn engine', () => {
   })
   it('gates choices on required inventory', () => {
     const ev = byId('TSS_ACT2_006_MIDTERM_CRUNCH')
-    const without = { ...newGame(chars[0], 1), inventory: [] as string[], turn: 12 }
-    expect(canChoose(newGame(commuter, 1), ev.choice_a)).toBe(true)
+    const intern = chars[1] // starts with Surge Espresso
+    const without = { ...newGame(intern, 1), inventory: [] as string[], turn: 12 }
+    expect(canChoose(newGame(intern, 1), ev.choice_a)).toBe(true)
+    expect(canChoose(newGame(commuter, 1), ev.choice_a)).toBe(false) // commuter has none
     expect(canChoose(without, ev.choice_a)).toBe(false)
-    expect(applyChoice(without, ev, 'choice_a', commuter)).toBe(without)
+    expect(applyChoice(without, ev, 'choice_a', intern)).toBe(without)
   })
   it('never kills the player during act 1', () => {
     const ev = structuredClone(events.events_catalog[0])
@@ -88,8 +109,8 @@ describe('turn engine', () => {
     const ev = byId('TSS_ACT1_001_TTC_BLIZZARD') // choice_b sanity -25, both api deps
     const a = applyChoice(newGame(commuter, 1), ev, 'choice_b', commuter) // 1.5 x 1.0
     const c = applyChoice(newGame(chars[2], 1), ev, 'choice_b', chars[2]) // 0.8 x 0.8
-    expect(a.lastResult!.delta.sanity).toBe(Math.round(-25 * 1.5))
-    expect(c.lastResult!.delta.sanity).toBe(Math.round(-25 * 0.64))
+    expect(a.lastResult!.delta.sanity).toBe(Math.round(-25 * 1.25 * 1.0)) // commuter ttc 1.25, weather 1.0
+    expect(c.lastResult!.delta.sanity).toBe(Math.round(-25 * 0.5 * 0.75)) // campus ttc 0.5, weather 0.75
   })
   it('charges the cost of every day a choice consumes', () => {
     const ev = byId('TSS_ACT1_001_TTC_BLIZZARD')
@@ -160,7 +181,7 @@ describe('frozen client rules', () => {
     const ev = byId('TSS_ACT1_001_TTC_BLIZZARD')
     const s = applyChoice(newGame(chars[1], 1), ev, 'choice_b', chars[1], {
       delayMinutes: 30, tempC: 10, precipMm: 0, weatherLabel: '', transitLabel: '', weatherSource: 'live', transitSource: 'live' })
-    expect(s.lastResult!.delta.sanity).toBe(Math.round(-25 * 1.0 * 1.5 * 1.2)) // passives x TTC 1.5 x weather 1.2
+    expect(s.lastResult!.delta.sanity).toBe(Math.round(-25 * 1.0 * 1.15 * 1.5)) // intern passives (ttc 1.0, weather 1.15) x TTC 1.5
   })
   it('caps sanity/health at 100 and lets cash go negative without game over', () => {
     const ev = structuredClone(events.events_catalog[1])
@@ -177,9 +198,9 @@ describe('frozen client rules', () => {
   })
   it('consumes the required inventory item exactly once', () => {
     const ev = byId('TSS_ACT2_006_MIDTERM_CRUNCH')
-    const s = applyChoice({ ...newGame(commuter, 1), turn: 12 }, ev, 'choice_a', commuter)
+    const s = applyChoice({ ...newGame(chars[1], 1), turn: 12 }, ev, 'choice_a', chars[1])
     expect(s.inventory).not.toContain('Surge Espresso')
-    expect(s.inventory).toContain('Presto Card')
+    expect(s.inventory).toContain('Corporate Lanyard')
   })
   it('never repeats an event and finishes after turn 30', () => {
     let s = beginGame(newGame(commuter, 9), events)
@@ -189,7 +210,7 @@ describe('frozen client rules', () => {
       if (ev) {
         expect(seen.has(ev.event_id)).toBe(false)
         seen.add(ev.event_id)
-        s = applyChoice(s, ev, 'choice_a', commuter)
+        s = applyChoice(s, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter)
       }
       s = advanceTurn(s, events)
     }

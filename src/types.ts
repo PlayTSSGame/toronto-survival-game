@@ -51,6 +51,8 @@ export interface GameEvent {
   max_turn: number
   /** Optional place name shown in the header while this event is active. */
   location?: string
+  /** Optional illustration URL (e.g. /art/blizzard.png). Replaces the drawn scene. */
+  image?: string
   scenario_text: string
   api_dependencies: ApiDependencies
   choice_a: Choice

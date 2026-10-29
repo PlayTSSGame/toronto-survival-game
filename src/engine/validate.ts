@@ -39,14 +39,17 @@ export function parseCharacters(raw: unknown): CharactersFile {
     const p = `characters.classes[${i}]`
     if (!isObj(c)) fail(p, 'expected object')
     const pm = obj(c, 'passive_modifiers', p)
-    const inv = c.starting_inventory ?? []
-    if (!Array.isArray(inv) || inv.some((x) => typeof x !== 'string')) fail(`${p}.starting_inventory`, 'expected string[]')
+    // Delivered schema keeps the inventory inside starting_stats; a top-level starting_inventory is also accepted.
+    const ss = obj(c, 'starting_stats', p)
+    const inv = c.starting_inventory ?? ss.inventory ?? []
+    if (!Array.isArray(inv) || inv.some((x) => typeof x !== 'string')) fail(`${p}.starting_stats.inventory`, 'expected string[]')
     return {
       class_id: str(c, 'class_id', p),
       display_name: str(c, 'display_name', p),
-      starting_stats: parseStats(obj(c, 'starting_stats', p), `${p}.starting_stats`),
+      starting_stats: parseStats(ss, `${p}.starting_stats`),
       passive_modifiers: {
-        ttc_delay_multiplier: num(pm, 'ttc_delay_multiplier', `${p}.passive_modifiers`),
+        // Delivered name is ttc_delay_impact; ttc_delay_multiplier is the legacy alias.
+        ttc_delay_multiplier: num(pm, pm.ttc_delay_impact !== undefined ? 'ttc_delay_impact' : 'ttc_delay_multiplier', `${p}.passive_modifiers`),
         weather_drain_multiplier: num(pm, 'weather_drain_multiplier', `${p}.passive_modifiers`),
       },
       starting_inventory: inv as string[],
@@ -100,6 +103,7 @@ function parseEvent(e: unknown, i: number): GameEvent {
     act_tier: tier,
     min_turn: min,
     max_turn: max,
+    image: typeof e.image === 'string' && e.image ? e.image : undefined,
     location: typeof e.location === 'string' && e.location ? e.location : undefined,
     scenario_text: str(e, 'scenario_text', p),
     api_dependencies: deps,

@@ -43,4 +43,4 @@ Evaluated when turn 30 completes alive (`src/engine/game.ts`, `src/engine/rank.t
 Replace `src/data/characters.json` and `src/data/events.json` (same schema; `home_location` and `location` are optional). Content is validated at startup with field-level error messages; run `npm test`, which checks 5 events per act and plays each character through 30 days. Bump nothing else: saves referring to a removed character are discarded automatically.
 
 ## Status
-All three milestones implemented and tested on **placeholder content** (`PLACEHOLDER_*` events). Swap in the client's `characters.json` / `events.json` (same schema) and re-run `npm test`.
+All three milestones implemented and tested. `src/data/events.json` is the client's full 15-event catalog (plus an optional `location` field per event, added by us for the map). `src/data/characters.json` is still **placeholder** (only the Commuter's $40 cash comes from the client): replace it with the client's file and re-run `npm test`.

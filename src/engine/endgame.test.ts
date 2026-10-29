@@ -131,7 +131,7 @@ describe('end-to-end playthroughs', () => {
     for (let i = 0; i < 30 && s.status === 'playing'; i++) {
       const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)
       if (ev) acts.push(ev.act_tier)
-      if (ev) s = applyChoice({ ...s, stats: { cash: 5000, sanity: 100, health: 100 } }, ev, 'choice_a', chars[0])
+      if (ev) s = applyChoice({ ...s, stats: { cash: 5000, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', chars[0])
       s = advanceTurn(s, events)
     }
     expect(acts.filter((a) => a === 1)).toHaveLength(5)
