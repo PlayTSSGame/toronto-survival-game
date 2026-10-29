@@ -53,6 +53,7 @@ export function parseCharacters(raw: unknown): CharactersFile {
         weather_drain_multiplier: num(pm, 'weather_drain_multiplier', `${p}.passive_modifiers`),
       },
       starting_inventory: inv as string[],
+      daily_stipend: c.daily_stipend === undefined ? 0 : num(c, 'daily_stipend', p),
       home_location: typeof c.home_location === 'string' && c.home_location ? c.home_location : 'Toronto',
       description: str(c, 'description', p),
     }

@@ -14,7 +14,7 @@ const events = parseEvents(eventsRaw)
 const all = events.events_catalog.map((e) => e.event_id)
 
 const at30 = (over: Partial<GameState> & { stats?: GameState['stats'] }): GameState => ({
-  ...newGame(chars[0], 1), turn: 30, processedEvents: all, ...over,
+  ...newGame(chars[0], 1), stipend: 0, turn: 30, processedEvents: all, ...over,
 })
 const bad: Environment = { ...FALLBACK_ENV, delayMinutes: 30, tempC: -10 } // ttc 1.5, weather 1.5
 
@@ -35,23 +35,29 @@ function play(char: CharacterClass, seed: number, pick: (s: GameState) => 'choic
 }
 
 describe('catalog', () => {
+  it('has the client\'s latest recovery values', () => {
+    const tim = events.events_catalog.find((e) => e.event_id === 'TSS_ACT2_007_TIM_HORTONS_LINE')!.choice_a.metrics_impact
+    expect(tim).toMatchObject({ health_modifier: 20, turns_consumed: 1 })
+    const meal = events.events_catalog.find((e) => e.event_id === 'TSS_ACT3_014_MEAL_PLAN_END')!.choice_a.metrics_impact
+    expect(meal).toMatchObject({ sanity_modifier: 45, health_modifier: 50 })
+  })
   it('has 5 events per act', () => {
     for (const act of [1, 2, 3]) expect(events.events_catalog.filter((e) => e.act_tier === act)).toHaveLength(5)
   })
 })
 
 describe('victory conditions', () => {
-  const rich = { cash: 150000, sanity: 50, health: 50 }
+  const rich = { cash: 15000, sanity: 50, health: 50 }
   it('wealth needs cash, turn >= 25 and every event played', () => {
     expect(evaluateVictory(at30({ stats: rich }), events, FALLBACK_ENV)).toBe('wealth')
     expect(evaluateVictory(at30({ stats: rich, processedEvents: all.slice(1) }), events, FALLBACK_ENV)).not.toBe('wealth')
     expect(evaluateVictory(at30({ stats: rich, turn: 24 }), events, FALLBACK_ENV)).not.toBe('wealth')
-    expect(evaluateVictory(at30({ stats: { ...rich, cash: 99999 } }), events, FALLBACK_ENV)).toBe('endurance')
+    expect(evaluateVictory(at30({ stats: { ...rich, cash: 9999 } }), events, FALLBACK_ENV)).toBe('endurance')
   })
   it('asset threshold scales with live modifiers', () => {
-    expect(condoThreshold(FALLBACK_ENV)).toBe(100000)
-    expect(condoThreshold(bad)).toBe(200000) // 1 + 0.5 + 0.5
-    const s = at30({ stats: { cash: 150000, sanity: 50, health: 50 }, processedEvents: [] })
+    expect(condoThreshold(FALLBACK_ENV)).toBe(10000)
+    expect(condoThreshold(bad)).toBe(20000) // 1 + 0.5 + 0.5
+    const s = at30({ stats: { cash: 15000, sanity: 50, health: 50 }, processedEvents: [] })
     expect(evaluateVictory(s, events, FALLBACK_ENV)).toBe('asset')
     expect(evaluateVictory(s, events, bad)).toBe('endurance')
   })
@@ -59,18 +65,46 @@ describe('victory conditions', () => {
     const fin = advanceTurn(at30({ stats: { cash: 10, sanity: 5, health: 5 } }), events)
     expect(fin.status).toBe('finished')
     expect(fin.victory).toBe('endurance')
-    const dead = advanceTurn(at30({ stats: { cash: -10, sanity: 5, health: 50 } }), events)
-    expect(dead.status).toBe('lost') // overdraft -5 sanity
+    const dead = advanceTurn(at30({ stats: { cash: -10, sanity: 2, health: 50 } }), events)
+    expect(dead.status).toBe('lost') // overdraft -2 sanity
     expect(dead.victory).toBeNull()
   })
   it('does not end early when thresholds are hit before turn 30', () => {
-    const s = { ...newGame(chars[0], 1), turn: 26, stats: { cash: 200000, sanity: 50, health: 50 }, processedEvents: all }
+    const s = { ...newGame(chars[0], 1), turn: 26, stats: { cash: 20000, sanity: 50, health: 50 }, processedEvents: all }
     const n = advanceTurn(s, events)
     expect(n.status).toBe('playing')
     expect(n.turn).toBe(27)
   })
-  it('drain grows 15% per turn', () => {
+  it('drain grows 8% per turn from the base cost', () => {
     expect(dailyDrain(1)).toBe(0) // base cost not yet supplied
+  })
+})
+
+describe('daily stipend', () => {
+  const base = { ...newGame(chars[0], 1), stipend: 350, turn: 12, stats: { cash: 100, sanity: 80, health: 80 } }
+  it('pays once per completed day', () => {
+    expect(advanceTurn(base, events).stats.cash).toBe(450)
+  })
+  it('pays for every day a multi-day choice consumes', () => {
+    const ev = events.events_catalog.find((e) => e.event_id === 'TSS_ACT1_001_TTC_BLIZZARD')!
+    const s = applyChoice({ ...base, turn: 3 }, ev, 'choice_b', chars[0]) // 2 days, no cash cost
+    expect(advanceTurn(s, events).stats.cash).toBe(100 + 700)
+  })
+  it('is paid before the overdraft check, so it can clear a small overdraft', () => {
+    const s = { ...base, stats: { cash: -100, sanity: 50, health: 50 } }
+    const n = advanceTurn(s, events)
+    expect(n.stats.cash).toBe(250)
+    expect(n.stats.sanity).toBe(50) // no overdraft penalty
+  })
+  it('pays on day 30 before victory is evaluated', () => {
+    const s = { ...base, turn: 30, processedEvents: all, stats: { cash: 9700, sanity: 50, health: 50 } }
+    const n = advanceTurn(s, events)
+    expect(n.status).toBe('finished')
+    expect(n.stats.cash).toBe(10050)
+    expect(n.victory).toBe('wealth')
+  })
+  it('does nothing when the character has no stipend', () => {
+    expect(advanceTurn({ ...base, stipend: 0 }, events).stats.cash).toBe(100)
   })
 })
 

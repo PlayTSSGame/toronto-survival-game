@@ -104,7 +104,7 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
           <Coin size={26} />
           <div>
             <b><Count value={cash} format={money} /></b>
-            {cash < 0 && <small>OVERDRAFT</small>}
+            {cash < 0 ? <small>OVERDRAFT</small> : state.stipend > 0 && <small className="pay">+{money(state.stipend)}/day</small>}
           </div>
         </div>
         <div className={`stat${sanity <= 20 ? ' jitter' : ''}`}>

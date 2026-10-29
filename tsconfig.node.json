@@ -19,5 +19,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "server", "api", "netlify"]
+  "include": ["vite.config.ts", "vitest.config.ts", "vitest.balance.config.ts", "server", "api", "netlify"]
 }

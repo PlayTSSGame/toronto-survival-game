@@ -1,8 +1,8 @@
 import type { GameState, Stats } from '../types'
 import { STAT_MAX, TOTAL_TURNS } from './game'
 
-export const SAVE_KEY = 'tss.save.v3'
-const VERSION = 3
+export const SAVE_KEY = 'tss.save.v4'
+const VERSION = 4
 
 interface Envelope {
   version: number
@@ -28,6 +28,7 @@ function coherent(s: GameState): boolean {
   if (!st || !isNum(st.cash) || !isNum(st.sanity) || !isNum(st.health)) return false
   if (!Number.isInteger(s.turn) || s.turn < 1 || s.turn > TOTAL_TURNS) return false
   if (typeof s.characterId !== 'string') return false
+  if (!isNum(s.stipend) || s.stipend < 0) return false
   if (!Array.isArray(s.inventory) || s.inventory.some((i) => typeof i !== 'string')) return false
   if (!Array.isArray(s.processedEvents) || s.processedEvents.length > s.turn) return false
   if (new Set(s.processedEvents).size !== s.processedEvents.length) return false

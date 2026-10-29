@@ -11,15 +11,15 @@ export const STAT_MAX = 100
 /** Opening act has no fatal triggers (earlier baseline); vitals floor at 1 through this turn. */
 export const ACT1_LAST_TURN = 10
 /**
- * Base cost of the progressive daily drain (base × 1.15^turn). The client has not supplied it,
+ * Base cost of the progressive daily drain (base × 1.08^turn). The client has not supplied it,
  * so it is 0 (no drain) until confirmed. It is also the "Base Cost" in the negative-cash rule.
  */
 export const BASE_DAILY_DRAIN = 0
-export const DRAIN_GROWTH = 1.15
-export const WEALTH_TARGET = 100_000
+export const DRAIN_GROWTH = 1.08
+export const WEALTH_TARGET = 10_000
 export const WEALTH_MIN_TURN = 25
-export const CONDO_BASE_PRICE = 100_000
-export const NEGATIVE_CASH_EXTRA_PENALTY = 5
+export const CONDO_BASE_PRICE = 10_000
+export const NEGATIVE_CASH_EXTRA_PENALTY = 2
 
 export function dailyDrain(turn: number): number {
   return Math.round(BASE_DAILY_DRAIN * DRAIN_GROWTH ** turn)
@@ -60,6 +60,7 @@ export function newGame(char: CharacterClass, seed: number): GameState {
     characterId: char.class_id,
     seed: seed >>> 0,
     turn: 1,
+    stipend: char.daily_stipend,
     stats: { ...char.starting_stats },
     inventory: [...char.starting_inventory],
     flags: {},
@@ -173,6 +174,8 @@ export function advanceTurn(state: GameState, events: EventsFile, env: Environme
   let stats = state.stats
   for (let d = 0; d < days; d++) {
     const day = state.turn + d
+    // Daily stipend is paid as each day completes, before the overdraft check.
+    if (state.stipend > 0) stats = { ...stats, cash: Math.round((stats.cash + state.stipend) * 100) / 100 }
     const penalty = dailyDrain(day) + (stats.cash < 0 ? NEGATIVE_CASH_EXTRA_PENALTY : 0)
     if (penalty > 0) {
       const floor = day <= ACT1_LAST_TURN ? 1 : 0

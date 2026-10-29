@@ -262,3 +262,4 @@ html.contrast .stat, html.contrast .chip, html.contrast .item, html.contrast .fi
 html.contrast .who span, html.contrast .desc, html.contrast .week, html.contrast .bag b, html.contrast .link, html.contrast .footer a, html.contrast .sub, html.contrast .ranklab, html.contrast .sheet small, html.contrast .reason, html.contrast .chip b { color: #fff; }
 html.contrast .dot { background: #8A8AA0; } html.contrast .segs i { background: #6A6A80; }
 html.contrast .key { border-color: #fff; }
+.stat small.pay { color: #2EE6A6; letter-spacing: .04em; }

@@ -15,6 +15,8 @@ export interface CharacterClass {
   starting_stats: Stats
   passive_modifiers: PassiveModifiers
   starting_inventory: string[]
+  /** Flat cash earned on every completed day (client's daily stipend rule). 0 if not supplied. */
+  daily_stipend: number
   /** Where the character begins; shown in the header until an event sets another location. */
   home_location: string
   description: string
@@ -93,6 +95,8 @@ export interface GameState {
   characterId: string
   seed: number
   turn: number
+  /** Cash added on every completed day; copied from the character at game start. */
+  stipend: number
   stats: Stats
   inventory: string[]
   flags: Record<string, boolean>

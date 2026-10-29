@@ -45,8 +45,10 @@ describe('characters.json as delivered', () => {
   it('reads inventory from starting_stats and ttc_delay_impact', () => {
     expect(chars.map((c) => c.class_id)).toEqual(['CLASS_001_COMMUTER', 'CLASS_002_INTERN', 'CLASS_003_CAMPUS_RES'])
     expect(chars[0].starting_stats).toMatchObject({ cash: 40, sanity: 85, health: 90 })
-    expect(chars[0].starting_inventory).toEqual(['Presto Card'])
-    expect(chars[1].starting_inventory).toEqual(['Corporate Lanyard', 'Surge Espresso'])
+    expect(chars[0].starting_inventory).toEqual(['Presto Card', 'Meal Plan Voucher'])
+    expect(chars[1].starting_inventory).toEqual(['Corporate Lanyard', 'Surge Espresso', 'Meal Plan Voucher'])
+    expect(chars[2].starting_inventory).toEqual(['Meal Plan Voucher'])
+    expect(chars.map((c) => c.daily_stipend)).toEqual([350, 600, 200])
     expect(chars.map((c) => c.passive_modifiers.ttc_delay_multiplier)).toEqual([1.25, 1, 0.5])
     expect(chars.map((c) => c.passive_modifiers.weather_drain_multiplier)).toEqual([1, 1.15, 0.75])
   })
@@ -88,7 +90,7 @@ describe('turn engine', () => {
     const intern = chars[1] // starts with Surge Espresso
     const without = { ...newGame(intern, 1), inventory: [] as string[], turn: 12 }
     expect(canChoose(newGame(intern, 1), ev.choice_a)).toBe(true)
-    expect(canChoose(newGame(commuter, 1), ev.choice_a)).toBe(false) // commuter has none
+    expect(canChoose(newGame(commuter, 1), ev.choice_a)).toBe(false) // Surge Espresso: commuter has none
     expect(canChoose(without, ev.choice_a)).toBe(false)
     expect(applyChoice(without, ev, 'choice_a', intern)).toBe(without)
   })
@@ -142,13 +144,13 @@ describe('persistence', () => {
     st.setItem(SAVE_KEY, '{nope')
     expect(loadGame(st)).toBeNull()
     const bad = { ...s, stats: { ...s.stats, cash: NaN } }
-    st.setItem(SAVE_KEY, JSON.stringify({ version: 3, state: bad, checksum: checksum(bad) }))
+    st.setItem(SAVE_KEY, JSON.stringify({ version: 4, state: bad, checksum: checksum(bad) }))
     expect(loadGame(st)).toBeNull()
   })
   it('rejects saves whose win/loss state contradicts the vitals or turn', () => {
     const st = memStorage()
     const s = newGame(commuter, 5)
-    const put = (o: object) => { const x = { ...s, ...o } as typeof s; st.setItem(SAVE_KEY, JSON.stringify({ version: 3, state: x, checksum: checksum(x) })); return loadGame(st) }
+    const put = (o: object) => { const x = { ...s, ...o } as typeof s; st.setItem(SAVE_KEY, JSON.stringify({ version: 4, state: x, checksum: checksum(x) })); return loadGame(st) }
     expect(put({})).not.toBeNull()
     expect(put({ status: 'lost' })).toBeNull() // lost with live vitals
     expect(put({ status: 'finished', victory: 'wealth' })).toBeNull() // finished before turn 30
@@ -193,8 +195,8 @@ describe('frozen client rules', () => {
     expect(s.status).toBe('playing')
   })
   it('charges extra sanity each day while cash is negative', () => {
-    const s = { ...newGame(commuter, 1), turn: 12, stats: { cash: -1, sanity: 50, health: 50 } }
-    expect(advanceTurn(s, events).stats.sanity).toBe(45)
+    const s = { ...newGame(commuter, 1), stipend: 0, turn: 12, stats: { cash: -1, sanity: 50, health: 50 } }
+    expect(advanceTurn(s, events).stats.sanity).toBe(48) // overdraft penalty is 2
   })
   it('consumes the required inventory item exactly once', () => {
     const ev = byId('TSS_ACT2_006_MIDTERM_CRUNCH')

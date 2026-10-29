@@ -195,7 +195,7 @@
         "metrics_impact": {
           "cash_modifier": -8.5,
           "sanity_modifier": 15,
-          "health_modifier": 5,
+          "health_modifier": 20,
           "turns_consumed": 1
         },
         "required_inventory_item": null
@@ -400,8 +400,8 @@
         "action_text": "Redeem your inventory Meal Plan Voucher item to access the elite dining hall buffet.",
         "metrics_impact": {
           "cash_modifier": 0.0,
-          "sanity_modifier": 20,
-          "health_modifier": 35,
+          "sanity_modifier": 45,
+          "health_modifier": 50,
           "turns_consumed": 1
         },
         "required_inventory_item": "Meal Plan Voucher"
