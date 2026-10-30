@@ -2,7 +2,7 @@
   padding: env(safe-area-inset-top) max(14px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(14px, env(safe-area-inset-left)); }
 
 /* ---------- Arcade keys (buttons) ---------- */
-.key { --face: var(--yellow); --edge: #B38F00; display: flex; align-items: center; gap: 12px; text-align: left; min-height: 56px; padding: 10px 16px;
+.key { height: auto; max-width: 100%; box-sizing: border-box; --face: var(--yellow); --edge: #B38F00; display: flex; align-items: center; gap: 12px; text-align: left; min-height: 56px; padding: 10px 16px;
   background: var(--face); color: var(--ink); border: 3px solid var(--ink); border-radius: 16px; cursor: pointer; font-family: var(--display); font-size: 19px; letter-spacing: .01em;
   box-shadow: 0 6px 0 var(--edge), 0 6px 0 3px var(--ink); transform: translateY(0); transition: transform .08s, box-shadow .08s, filter .1s; margin-bottom: 8px; }
 .key:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-2px); box-shadow: 0 8px 0 var(--edge), 0 8px 0 3px var(--ink); }
@@ -92,7 +92,7 @@ h1 span { display: inline-block; -webkit-text-stroke: 3px var(--ink); paint-orde
 .choices { display: flex; flex-direction: column; }
 .choice { align-items: stretch; padding: 8px 14px 8px 8px; gap: 12px; font-family: var(--display); font-size: 17px; line-height: 1.2; }
 .letter { flex: none; width: 42px; display: grid; place-items: center; border-radius: 10px; background: var(--ink); color: #fff; font-family: var(--display); font-weight: 400; font-size: 24px; }
-.ctext { flex: 1; display: flex; flex-direction: column; gap: 3px; justify-content: center; padding: 3px 0; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 15.5px; line-height: 1.25; }
+.ctext { flex: 1; min-width: 0; overflow-wrap: anywhere; hyphens: auto; display: flex; flex-direction: column; gap: 3px; justify-content: center; padding: 3px 0; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 15.5px; line-height: 1.25; }
 .ctext small { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
 
 .deltas { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 18px; }

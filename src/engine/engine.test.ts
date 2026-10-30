@@ -48,7 +48,7 @@ describe('characters.json as delivered', () => {
     expect(chars[0].starting_inventory).toEqual(['Presto Card', 'Meal Plan Voucher'])
     expect(chars[1].starting_inventory).toEqual(['Corporate Lanyard', 'Surge Espresso', 'Meal Plan Voucher'])
     expect(chars[2].starting_inventory).toEqual(['Meal Plan Voucher'])
-    expect(chars.map((c) => c.daily_stipend)).toEqual([350, 600, 200])
+    expect(chars.map((c) => c.daily_stipend)).toEqual([35, 65, 15])
     expect(chars.map((c) => c.passive_modifiers.ttc_delay_multiplier)).toEqual([1.25, 1, 0.5])
     expect(chars.map((c) => c.passive_modifiers.weather_drain_multiplier)).toEqual([1, 1.15, 0.75])
   })
