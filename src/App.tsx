@@ -201,6 +201,19 @@ export default function App() {
     if (status === 'lost') { playSfx('lose'); vibrate(220) }
   }, [status])
 
+  // Hardware back / swipe-back during a run returns to the menu instead of leaving the app
+  // or leaving the UI in a half-state. One history entry is pushed per run.
+  const inRun = !!state
+  const resetRef = useRef(reset)
+  useEffect(() => { resetRef.current = reset })
+  useEffect(() => {
+    if (!inRun) return
+    window.history.pushState({ tssRun: true }, '')
+    const onPop = () => { setShowMap(false); setShowSettings(false); resetRef.current() }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [inRun])
+
   const days = event && state?.lastResult ? event[state.lastResult.choiceKey].metrics_impact.turns_consumed : 1
 
   return (
