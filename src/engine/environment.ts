@@ -15,7 +15,7 @@ export function weatherModifier(tempC: number, precipMm: number): number {
   return Math.max(cold, rain)
 }
 
-/** Neutral readings used until live adapters (Milestone 2) are wired in. */
+/** Neutral readings used when a live feed is unavailable (offline fallback). */
 export const FALLBACK_ENV: Environment = {
   delayMinutes: 0,
   tempC: 10,

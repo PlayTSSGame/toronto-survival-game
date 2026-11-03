@@ -69,7 +69,7 @@ export interface EventsFile {
 
 export type FeedSource = 'live' | 'cached' | 'fallback'
 
-/** Normalized environment inputs; real adapters arrive in Milestone 2. */
+/** Normalized weather and TTC inputs, with a label and source (live, cached or fallback) per feed. */
 export interface Environment {
   /** Raw normalized readings; modifiers are derived in engine/environment.ts. */
   delayMinutes: number

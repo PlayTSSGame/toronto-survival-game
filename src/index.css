@@ -1,6 +1,10 @@
-@import '@fontsource/lilita-one/latin-400.css';
-@import '@fontsource/nunito/latin-700.css';
-@import '@fontsource/nunito/latin-900.css';
+/* Self-hosted, woff2 only (every supported browser reads it). Preloaded from index.html. */
+@font-face { font-family: 'Lilita One'; font-style: normal; font-display: swap; font-weight: 400;
+  src: url(./fonts/lilita-one-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-display: swap; font-weight: 700;
+  src: url(./fonts/nunito-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-display: swap; font-weight: 900;
+  src: url(./fonts/nunito-latin-900-normal.woff2) format('woff2'); }
 
 :root {
   color-scheme: dark;
