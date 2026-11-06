@@ -282,7 +282,7 @@ export default function App() {
                       <span className={`pop ${tone(state.lastResult.delta.sanity)}`}><Bolt size={22} />{signed(state.lastResult.delta.sanity)}</span>
                       <span className={`pop ${tone(state.lastResult.delta.health)}`}><Heart size={22} />{signed(state.lastResult.delta.health)}</span>
                     </div>
-                    <button className="key key-red wide" onClick={next}>{days > 1 ? `Skip ${days} days` : 'Next day'} »</button>
+                    <button className="key key-red wide" onClick={() => { playSfx('tap'); next() }}>{days > 1 ? `Skip ${days} days` : 'Next day'} »</button>
                   </>
                 ) : (
                   <div className="choices">
@@ -306,7 +306,7 @@ export default function App() {
             ) : (
               <>
                 <div className="card"><p className="narrative">Quiet day. Nothing goes wrong. Suspicious.</p></div>
-                <button className="key key-red wide" onClick={next}>Next day »</button>
+                <button className="key key-red wide" onClick={() => { playSfx('tap'); next() }}>Next day »</button>
               </>
             )}
           </section>
