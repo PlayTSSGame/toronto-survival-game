@@ -20,7 +20,21 @@ import { TrainIcon, WeatherIcon } from './ui/Weather'
 import { useGame } from './ui/useGame'
 import './App.css'
 
-const SPONSOR_URL = import.meta.env.VITE_SPONSOR_URL || 'https://forms.google.com'
+const SPONSOR_URL = import.meta.env.VITE_SPONSOR_URL || 'https://google.com'
+const REPORT_URL = `mailto:${import.meta.env.VITE_REPORT_EMAIL || 'playtssgame@gmail.com'}`
+
+/** Live Toronto date and time, e.g. "Mon, Nov 9, 2026 • 12:30 PM". Shown on the home banner. */
+function TorontoClock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 15000)
+    return () => window.clearInterval(id)
+  }, [])
+  const tz = 'America/Toronto'
+  const date = now.toLocaleDateString('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const time = now.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' })
+  return <time className="clock" dateTime={now.toISOString()}><span>{date}</span><i aria-hidden="true"> • </i><span>{time}</span></time>
+}
 
 /** Each survivor owns a colour that tints their cards. */
 const THEME: Record<Kind, string> = { commuter: '#4CC9F0', intern: '#FFD23F', campus: '#2EE6A6', other: '' }
@@ -225,6 +239,7 @@ export default function App() {
         {!error && !state && (
           <section className="intro">
             <div className="hero">
+              <TorontoClock />
               <Skyline />
               <HeroLife />
               <h1>
@@ -326,6 +341,8 @@ export default function App() {
         <button className="link" onClick={() => setShowSettings(true)}>Settings</button>
         <span aria-hidden="true"> · </span>
         <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer">Sponsor this game</a>
+        <span aria-hidden="true"> · </span>
+        <a href={REPORT_URL}>Report issue</a>
       </footer>
       {showSettings && <SettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
     </div>

@@ -44,32 +44,36 @@ function tone(c: AudioContext, freq: number, at: number, dur: number, type: Osci
   o.stop(at + dur + 0.02)
 }
 
-/** The client's supplied "Next Day" sound (public/next-day.mp3). Fetched once, decoded, replayed from memory. */
+/** Client-supplied sounds (public/*.mp3). Fetched once, decoded, replayed from memory. */
 const NEXT_DAY_URL = '/next-day.mp3'
-let nextDayBuf: Promise<AudioBuffer | null> | null = null
+const HIT_URL = '/hit.mp3'
+const buffers = new Map<string, Promise<AudioBuffer | null>>()
 
-function loadNextDay(c: AudioContext): Promise<AudioBuffer | null> {
-  nextDayBuf ??= fetch(NEXT_DAY_URL)
-    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
-    .then((b) => c.decodeAudioData(b))
-    .catch(() => { nextDayBuf = null; return null }) // offline or undecodable: stay silent, retry next time
-  return nextDayBuf
+function load(c: AudioContext, url: string): Promise<AudioBuffer | null> {
+  let p = buffers.get(url)
+  if (!p) {
+    p = fetch(url)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((b) => c.decodeAudioData(b))
+      .catch(() => { buffers.delete(url); return null }) // offline or undecodable: stay silent, retry next time
+    buffers.set(url, p)
+  }
+  return p
 }
 
 /** Warm the cache so the first tap has no delay. Safe to call before any user gesture. */
 export function preloadSfx() {
   const c = audio()
-  if (c) void loadNextDay(c)
+  if (c) { void load(c, NEXT_DAY_URL); void load(c, HIT_URL) }
 }
 
-/** Plays the supplied mp3 for the Next Day button (replaces the old synthesized chime). */
-export function playNextDay() {
+function playFile(url: string) {
   if (!getSettings().sound) return
   const c = audio()
   if (!c) return
   try {
     if (c.state === 'suspended') void c.resume()
-    void loadNextDay(c).then((buf) => {
+    void load(c, url).then((buf) => {
       if (!buf) return
       const src = c.createBufferSource()
       src.buffer = buf
@@ -79,7 +83,11 @@ export function playNextDay() {
   } catch { /* audio blocked: stay silent */ }
 }
 
+/** The supplied mp3 for the Next Day button. */
+export const playNextDay = () => playFile(NEXT_DAY_URL)
+
 export function playSfx(name: Sfx) {
+  if (name === 'hit') return playFile(HIT_URL) // client's custom sound replaces the low buzz
   if (!getSettings().sound) return
   const c = audio()
   if (!c) return
@@ -91,7 +99,6 @@ export function playSfx(name: Sfx) {
       case 'click': tone(c, 700, t, 0.11, 'sine', 0.09); tone(c, 1400, t, 0.07, 'sine', 0.025); break
       case 'coin': tone(c, 988, t, 0.09, 'triangle', 0.07); tone(c, 1319, t + 0.08, 0.2, 'triangle', 0.07); break
       case 'good': [523, 659, 784].forEach((f, i) => tone(c, f, t + i * 0.07, 0.14, 'triangle', 0.13)); break
-      case 'hit': tone(c, 240, t, 0.3, 'sawtooth', 0.14, 70); tone(c, 120, t, 0.25, 'square', 0.08, 50); break
       case 'win': [523, 659, 784, 1047, 1319].forEach((f, i) => tone(c, f, t + i * 0.11, 0.25, 'triangle', 0.14)); break
       case 'lose': [392, 349, 311, 233].forEach((f, i) => tone(c, f, t + i * 0.2, 0.34, 'sawtooth', 0.1)); break
     }

@@ -61,6 +61,9 @@
 /* Start screen */
 .intro { display: flex; flex-direction: column; gap: 22px; }
 .hero { position: relative; overflow: hidden; border-radius: 26px; padding: 26px 18px 92px; background: #2B1E5E; border: 3px solid #fff; box-shadow: 0 8px 0 #fff3, 0 8px 0 3px var(--ink); }
+.clock { position: absolute; top: 10px; right: 14px; z-index: 2; font-size: 11px; line-height: 1.3; color: #FFFFFF; text-align: right; white-space: nowrap; }
+@media (max-width: 330px) { .hero { padding-top: 46px; } }
+@media (max-width: 440px) { .clock span { display: block; } .clock i { display: none; } }
 .skyline { position: absolute; left: 0; bottom: -2px; width: 100%; height: 108px; }
 h1 { margin: 0; font-family: var(--display); font-weight: 400; line-height: .92; position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-transform: uppercase; }
 h1 span { display: inline-block; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink); }

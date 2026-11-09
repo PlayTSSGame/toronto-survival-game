@@ -16,7 +16,8 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 
 | Variable | Purpose | Default if unset |
 | --- | --- | --- |
-| `VITE_SPONSOR_URL` | Footer "Sponsor this game" link | `https://forms.google.com` |
+| `VITE_SPONSOR_URL` | Footer "Sponsor this game" link | `https://google.com` |
+| `VITE_REPORT_EMAIL` | Footer "Report issue" mailto address | `playtssgame@gmail.com` |
 | `VITE_TRANSIT_URL` | Override the TTC endpoint (optional) | same-origin `/api/transit` |
 
 ## Layout
@@ -71,7 +72,7 @@ The end screen offers "Copy result" (clipboard API, with a textarea fallback and
 
 ## Deploying
 1. `npm ci && npm test && npm run build` produces `dist/`.
-2. **Netlify:** connect the GitHub repo. `netlify.toml` sets build command `npm run build`, publish directory `dist`, and a `/* -> /index.html` rewrite (status 200) for the SPA. `netlify/functions/transit.ts` serves `/api/transit` through its own path config. Set `VITE_SPONSOR_URL` (and optionally `VITE_TRANSIT_URL`) in the site's environment variables before the first build. If the build needs a newer Node, set `NODE_VERSION` to 20 or later.
+2. **Netlify:** connect the GitHub repo. `netlify.toml` sets build command `npm run build`, publish directory `dist`, and a `/* -> /index.html` rewrite (status 200) for the SPA. `netlify/functions/transit.ts` serves `/api/transit` through its own path config. Set `VITE_SPONSOR_URL` and `VITE_REPORT_EMAIL` (and optionally `VITE_TRANSIT_URL`) in the site's environment variables before the first build. If the build needs a newer Node, set `NODE_VERSION` to 20 or later.
 3. **Vercel:** import the repo (Vite preset). `vercel.json` rewrites everything except `/api/*` to the SPA, and `api/transit.ts` becomes `/api/transit`.
 4. After deploying, open `/api/transit` (it should return JSON, not the game page) and refresh on a deep link to confirm the fallback works.
 5. Offline: `public/sw.js` caches the app shell after the first visit. It skips `/api/` and cross-origin requests.
