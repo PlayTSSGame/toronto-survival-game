@@ -8,7 +8,7 @@ import { Doors } from './ui/Doors'
 import { makeResultPng, saveOrShare } from './ui/shareImage'
 import { SettingsPanel } from './ui/SettingsPanel'
 import { useSettings } from './ui/settings'
-import { playSfx, vibrate } from './ui/sound'
+import { playNextDay, playSfx, preloadSfx, vibrate } from './ui/sound'
 import { moodFor } from './ui/mood'
 import { kindOf, type Kind } from './ui/kinds'
 import { RankBadge } from './ui/Badges'
@@ -179,8 +179,9 @@ export default function App() {
   const gain = !!res && (res.sanity > 0 || res.health > 0 || res.cash > 0)
   const place = event?.location ?? char?.home_location ?? ''
   const status = state?.status
-  const turn = state?.turn
   const lowVitals = !!state && state.status === 'playing' && (state.stats.sanity <= 20 || state.stats.health <= 20)
+
+  useEffect(() => { preloadSfx() }, [])
 
   // Sound and haptics follow what just happened.
   const lastResult = state?.lastResult
@@ -191,11 +192,6 @@ export default function App() {
     else if (d.cash > 0) { playSfx('coin'); vibrate(30) }
     else if (d.sanity > 0 || d.health > 0) { playSfx('good'); vibrate(30) }
   }, [lastResult])
-  const prevTurn = useRef(turn)
-  useEffect(() => {
-    if (turn !== undefined && prevTurn.current !== turn) playSfx('doors')
-    prevTurn.current = turn
-  }, [turn])
   useEffect(() => {
     if (status === 'finished') { playSfx('win'); vibrate([60, 40, 60, 40, 140]) }
     if (status === 'lost') { playSfx('lose'); vibrate(220) }
@@ -282,7 +278,7 @@ export default function App() {
                       <span className={`pop ${tone(state.lastResult.delta.sanity)}`}><Bolt size={22} />{signed(state.lastResult.delta.sanity)}</span>
                       <span className={`pop ${tone(state.lastResult.delta.health)}`}><Heart size={22} />{signed(state.lastResult.delta.health)}</span>
                     </div>
-                    <button className="key key-red wide" onClick={() => { playSfx('tap'); next() }}>{days > 1 ? `Skip ${days} days` : 'Next day'} »</button>
+                    <button className="key key-red wide" onClick={() => { playNextDay(); next() }}>{days > 1 ? `Skip ${days} days` : 'Next day'} »</button>
                   </>
                 ) : (
                   <div className="choices">
@@ -306,7 +302,7 @@ export default function App() {
             ) : (
               <>
                 <div className="card"><p className="narrative">Quiet day. Nothing goes wrong. Suspicious.</p></div>
-                <button className="key key-red wide" onClick={() => { playSfx('tap'); next() }}>Next day »</button>
+                <button className="key key-red wide" onClick={() => { playNextDay(); next() }}>Next day »</button>
               </>
             )}
           </section>

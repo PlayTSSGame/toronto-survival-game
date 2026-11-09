@@ -2,7 +2,7 @@ import { getSettings } from './settings'
 
 /** Tiny synthesized sound effects (no audio files) and haptics. Both honour the Settings toggles. */
 
-type Sfx = 'click' | 'tap' | 'coin' | 'good' | 'hit' | 'doors' | 'win' | 'lose'
+type Sfx = 'click' | 'coin' | 'good' | 'hit' | 'win' | 'lose'
 
 let ctx: AudioContext | null = null
 /** Everything routes through a gentle low-pass so nothing is piercing on phone speakers. */
@@ -44,21 +44,39 @@ function tone(c: AudioContext, freq: number, at: number, dur: number, type: Osci
   o.stop(at + dur + 0.02)
 }
 
-function whoosh(c: AudioContext, at: number) {
-  const len = Math.floor(c.sampleRate * 0.45)
-  const buf = c.createBuffer(1, len, c.sampleRate)
-  const d = buf.getChannelData(0)
-  for (let i = 0; i < len; i++) d[i] = (((i * 7919) % 2000) / 1000 - 1) * (1 - i / len)
-  const src = c.createBufferSource()
-  src.buffer = buf
-  const f = c.createBiquadFilter()
-  f.type = 'bandpass'
-  f.frequency.setValueAtTime(400, at)
-  f.frequency.exponentialRampToValueAtTime(1800, at + 0.4)
-  const g = c.createGain()
-  g.gain.value = 0.18
-  src.connect(f).connect(g).connect(master(c))
-  src.start(at)
+/** The client's supplied "Next Day" sound (public/next-day.mp3). Fetched once, decoded, replayed from memory. */
+const NEXT_DAY_URL = '/next-day.mp3'
+let nextDayBuf: Promise<AudioBuffer | null> | null = null
+
+function loadNextDay(c: AudioContext): Promise<AudioBuffer | null> {
+  nextDayBuf ??= fetch(NEXT_DAY_URL)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    .then((b) => c.decodeAudioData(b))
+    .catch(() => { nextDayBuf = null; return null }) // offline or undecodable: stay silent, retry next time
+  return nextDayBuf
+}
+
+/** Warm the cache so the first tap has no delay. Safe to call before any user gesture. */
+export function preloadSfx() {
+  const c = audio()
+  if (c) void loadNextDay(c)
+}
+
+/** Plays the supplied mp3 for the Next Day button (replaces the old synthesized chime). */
+export function playNextDay() {
+  if (!getSettings().sound) return
+  const c = audio()
+  if (!c) return
+  try {
+    if (c.state === 'suspended') void c.resume()
+    void loadNextDay(c).then((buf) => {
+      if (!buf) return
+      const src = c.createBufferSource()
+      src.buffer = buf
+      src.connect(c.destination)
+      src.start()
+    })
+  } catch { /* audio blocked: stay silent */ }
 }
 
 export function playSfx(name: Sfx) {
@@ -71,11 +89,9 @@ export function playSfx(name: Sfx) {
     switch (name) {
       // Soft sine chimes: a short tick with a quiet octave overtone, and a gentle rising two-note "ring".
       case 'click': tone(c, 700, t, 0.11, 'sine', 0.09); tone(c, 1400, t, 0.07, 'sine', 0.025); break
-      case 'tap': tone(c, 523, t, 0.1, 'sine', 0.08); tone(c, 784, t + 0.055, 0.16, 'sine', 0.08); tone(c, 1568, t + 0.055, 0.1, 'sine', 0.02); break
       case 'coin': tone(c, 988, t, 0.09, 'triangle', 0.07); tone(c, 1319, t + 0.08, 0.2, 'triangle', 0.07); break
       case 'good': [523, 659, 784].forEach((f, i) => tone(c, f, t + i * 0.07, 0.14, 'triangle', 0.13)); break
       case 'hit': tone(c, 240, t, 0.3, 'sawtooth', 0.14, 70); tone(c, 120, t, 0.25, 'square', 0.08, 50); break
-      case 'doors': whoosh(c, t); break
       case 'win': [523, 659, 784, 1047, 1319].forEach((f, i) => tone(c, f, t + i * 0.11, 0.25, 'triangle', 0.14)); break
       case 'lose': [392, 349, 311, 233].forEach((f, i) => tone(c, f, t + i * 0.2, 0.34, 'sawtooth', 0.1)); break
     }
