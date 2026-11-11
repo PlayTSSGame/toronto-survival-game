@@ -9,6 +9,7 @@ const MEDALS: Record<string, { ring: string; face: string; art: React.ReactNode 
   'Condo Conqueror': { ring: '#4CC9F0', face: '#4B3B8C', art: <><rect x="30" y="24" width="40" height="54" fill="#FF6FB5" {...I} />{[34, 46, 58].map((y) => <g key={y}><rect x="37" y={y} width="9" height="8" fill="#fff" /><rect x="54" y={y} width="9" height="8" fill="#fff" /></g>)}<circle cx="74" cy="30" r="9" fill="#FFD23F" {...I} /></> },
   'Overdraft Legend': { ring: '#FF3B30', face: '#3A1F1F', art: <><circle cx="50" cy="50" r="26" fill="#FFD23F" {...I} /><path d="M36 50h28" stroke="#121212" strokeWidth="7" strokeLinecap="round" /></> },
   'Commuter Master': { ring: '#2EE6A6', face: '#25546B', art: <><path d="M26 66l-6-34 18 14 12-22 12 22 18-14-6 34z" fill="#FFD23F" {...I} /><circle cx="50" cy="52" r="4.5" fill="#FF3B30" /></> },
+  'Endless Legend': { ring: '#A78BFA', face: '#2B1E5E', art: <><path d="M26 50c0-12 10-18 24-6s24 6 24-6M26 50c0 12 10 18 24 6s24-6 24 6" transform="translate(-12 0) scale(.84 .84) translate(12 8)" fill="none" stroke="#FFD23F" strokeWidth="7" strokeLinecap="round" /><circle cx="50" cy="26" r="5" fill="#fff" {...I} /></> },
   "Tim's Coffee Survivor": { ring: '#FF6FB5', face: '#7A3A1F', art: <><path d="M32 40h36l-5 34H37z" fill="#fff" {...I} /><path d="M30 40h40v-9H30z" fill="#FF3B30" {...I} /><path d="M44 24q-5-7 0-12M56 24q-5-7 0-12" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" /></> },
 }
 

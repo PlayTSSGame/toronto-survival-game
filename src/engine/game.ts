@@ -6,7 +6,11 @@ import { mulberry32 } from './rng'
 
 export { FALLBACK_ENV }
 
-export const TOTAL_TURNS = 30
+export const TOTAL_TURNS = 60
+export const DAYS_PER_ACT = 10
+export const ACT_COUNT = 6
+/** Events drawn this recently are skipped when the pool has run dry and has to recycle. */
+export const RECENT_MEMORY = 5
 export const STAT_MAX = 100
 /** Opening act has no fatal triggers (earlier baseline); vitals floor at 1 through this turn. */
 export const ACT1_LAST_TURN = 10
@@ -17,7 +21,9 @@ export const ACT1_LAST_TURN = 10
 export const BASE_DAILY_DRAIN = 0
 export const DRAIN_GROWTH = 1.08
 export const WEALTH_TARGET = 10_000
-export const WEALTH_MIN_TURN = 25
+export const WEALTH_MIN_TURN = 50
+/** Wealth also needs this share of the catalog seen, so an early cash spike cannot end the run on its own. */
+export const WEALTH_SEEN_SHARE = 0.8
 export const CONDO_BASE_PRICE = 10_000
 export const NEGATIVE_CASH_EXTRA_PENALTY = 2
 
@@ -32,27 +38,26 @@ export function condoThreshold(env: Environment): number {
 }
 
 /**
- * Evaluated once, when turn 30 completes with vitals above zero.
- * Wealth needs every catalog event played so an early cash spike cannot end the run on its own.
+ * Evaluated once, when day 60 completes with vitals above zero.
+ * Wealth needs most of the catalog seen (events can repeat in a long run, so it counts distinct ids).
  */
 export function evaluateVictory(state: GameState, events: EventsFile, env: Environment): Victory | null {
   if (state.status === 'lost' || state.stats.health <= 0 || state.stats.sanity <= 0) return null
-  const allPlayed = state.processedEvents.length === events.events_catalog.length
-  if (state.stats.cash >= WEALTH_TARGET && state.turn >= WEALTH_MIN_TURN && allPlayed) return 'wealth'
+  const seen = new Set(state.processedEvents).size >= Math.ceil(events.events_catalog.length * WEALTH_SEEN_SHARE)
+  if (state.stats.cash >= WEALTH_TARGET && state.turn >= WEALTH_MIN_TURN && seen) return 'wealth'
   if (state.stats.cash >= condoThreshold(env)) return 'asset'
   return 'endurance'
 }
 
-export function actForTurn(turn: number): 1 | 2 | 3 {
-  return turn <= 10 ? 1 : turn <= 20 ? 2 : 3
+/** Six acts of ten days. Endless mode stays in act 6. */
+export function actForTurn(turn: number): 1 | 2 | 3 | 4 | 5 | 6 {
+  return Math.min(ACT_COUNT, Math.max(1, Math.ceil(turn / DAYS_PER_ACT))) as 1 | 2 | 3 | 4 | 5 | 6
 }
 
 export function timeLabel(turn: number): string {
-  if (turn <= 7) return 'Week 1'
-  if (turn <= 14) return 'Week 2'
-  if (turn <= 21) return 'Week 3'
-  if (turn <= 28) return 'Week 4'
-  return 'Month End'
+  if (turn > TOTAL_TURNS) return 'Endless'
+  const week = Math.ceil(turn / 7)
+  return week >= 9 ? 'Final stretch' : `Week ${week}`
 }
 
 export function newGame(char: CharacterClass, seed: number): GameState {
@@ -70,18 +75,24 @@ export function newGame(char: CharacterClass, seed: number): GameState {
     status: 'playing',
     lossReason: null,
     victory: null,
+    endless: false,
+    recent: [],
   }
 }
 
-/** Events for the current act that have not been drawn yet. */
+/**
+ * Events whose turn window contains the current day and that this run has not seen yet.
+ * Once those run out the pool recycles: first events not drawn lately, then anything in the window.
+ */
 export function eligibleEvents(state: GameState, events: EventsFile): GameEvent[] {
-  const act = actForTurn(state.turn)
-  return events.events_catalog.filter(
-    (e) => e.act_tier === act && !state.processedEvents.includes(e.event_id),
-  )
+  const inWindow = events.events_catalog.filter((e) => e.min_turn <= state.turn && state.turn <= e.max_turn)
+  const unseen = inWindow.filter((e) => !state.processedEvents.includes(e.event_id))
+  if (unseen.length) return unseen
+  const rested = inWindow.filter((e) => !state.recent.includes(e.event_id))
+  return rested.length ? rested : inWindow
 }
 
-/** Deterministic for a given (seed, turn, processed set). Null means a quiet day. */
+/** Deterministic for a given (seed, turn, history). Null only if no event covers this day. */
 export function pickEvent(state: GameState, events: EventsFile): GameEvent | null {
   const pool = eligibleEvents(state, events)
   if (pool.length === 0) return null
@@ -149,6 +160,7 @@ export function applyChoice(
     stats,
     inventory,
     processedEvents: [...state.processedEvents, event.event_id],
+    recent: [...state.recent, event.event_id].slice(-RECENT_MEMORY),
     lastResult: { eventId: event.event_id, choiceKey: key, delta },
     status,
     lossReason: reason,
@@ -159,7 +171,7 @@ export function applyChoice(
 /**
  * Player-initiated "Next Day". A choice may consume more than one day (`turns_consumed`);
  * each consumed day charges the progressive drain, plus the overdraft penalty while cash < 0.
- * Passing day 30 finishes the run.
+ * Passing day 60 finishes the run (unless endless mode is on).
  */
 export function advanceTurn(state: GameState, events: EventsFile, env: Environment = FALLBACK_ENV): GameState {
   if (state.status !== 'playing') return state
@@ -169,7 +181,7 @@ export function advanceTurn(state: GameState, events: EventsFile, env: Environme
   const last = state.lastResult
   const ev = last && events.events_catalog.find((e) => e.event_id === last.eventId)
   const spent = ev && last ? ev[last.choiceKey].metrics_impact.turns_consumed : 1
-  const days = Math.min(spent, TOTAL_TURNS - state.turn + 1)
+  const days = state.endless ? spent : Math.min(spent, TOTAL_TURNS - state.turn + 1)
 
   let stats = state.stats
   for (let d = 0; d < days; d++) {
@@ -187,7 +199,7 @@ export function advanceTurn(state: GameState, events: EventsFile, env: Environme
     }
   }
   const base: GameState = { ...state, stats, lastResult: null, currentEventId: null }
-  if (state.turn + spent > TOTAL_TURNS) {
+  if (!state.endless && state.turn + spent > TOTAL_TURNS) {
     const done: GameState = { ...base, turn: TOTAL_TURNS, status: 'finished' }
     return { ...done, victory: evaluateVictory(done, events, env) }
   }
@@ -199,4 +211,11 @@ export function advanceTurn(state: GameState, events: EventsFile, env: Environme
 /** Starts the first event of a fresh game. */
 export function beginGame(state: GameState, events: EventsFile): GameState {
   return { ...state, currentEventId: pickEvent(state, events)?.event_id ?? null }
+}
+
+/** "Keep Surviving": continues a finished run past day 60 with no end date. */
+export function continueEndless(state: GameState, events: EventsFile): GameState {
+  if (state.status !== 'finished') return state
+  const next: GameState = { ...state, status: 'playing', endless: true, victory: null, turn: TOTAL_TURNS + 1, lastResult: null }
+  return { ...next, currentEventId: pickEvent(next, events)?.event_id ?? null }
 }

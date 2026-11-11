@@ -64,6 +64,69 @@
       },
       "description": "Almost zero liquidity, but highly resilient. Takes 50% less impact from TTC delays and survives winter blizzards due to campus proximity.",
       "daily_stipend": 15.0
+    },
+    {
+      "class_id": "CLASS_004_NEWCOMER",
+      "display_name": "The Newcomer / International Student",
+      "home_location": "Union Station Area",
+      "starting_stats": {
+        "cash": 120.0,
+        "sanity": 70,
+        "health": 85,
+        "current_turn": 1,
+        "inventory": [
+          "Presto Card",
+          "Meal Plan Voucher"
+        ]
+      },
+      "passive_modifiers": {
+        "ttc_delay_impact": 1.0,
+        "weather_drain_multiplier": 1.0
+      },
+      "description": "Navigating Canadian credit scores, winter gear, and tuition deadlines.",
+      "daily_stipend": 25.0
+    },
+    {
+      "class_id": "CLASS_005_GIG_COURIER",
+      "display_name": "The Downtown Gig & Uber Courier",
+      "home_location": "Downtown Core",
+      "starting_stats": {
+        "cash": 60.0,
+        "sanity": 60,
+        "health": 75,
+        "current_turn": 1,
+        "inventory": [
+          "Courier Bag",
+          "Meal Plan Voucher"
+        ]
+      },
+      "passive_modifiers": {
+        "ttc_delay_impact": 1.0,
+        "weather_drain_multiplier": 1.0
+      },
+      "description": "Dodging bike-lane traffic, surge-pricing peaks, and unpredictable tips.",
+      "daily_stipend": 45.0
+    },
+    {
+      "class_id": "CLASS_006_STARTUP_HUSTLER",
+      "display_name": "The North York Startup Hustler",
+      "home_location": "North York",
+      "starting_stats": {
+        "cash": 180.0,
+        "sanity": 55,
+        "health": 80,
+        "current_turn": 1,
+        "inventory": [
+          "Pitch Deck",
+          "Meal Plan Voucher"
+        ]
+      },
+      "passive_modifiers": {
+        "ttc_delay_impact": 1.0,
+        "weather_drain_multiplier": 1.0
+      },
+      "description": "Pitching investors on King West while surviving on $7 iced lattes.",
+      "daily_stipend": 50.0
     }
   ]
 }

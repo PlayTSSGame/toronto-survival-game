@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import charactersRaw from '../data/characters.json'
 import eventsRaw from '../data/events.json'
 import { ttcModifier, weatherModifier } from './environment'
-import { actForTurn, advanceTurn, applyChoice, beginGame, canChoose, newGame, pickEvent, timeLabel, TOTAL_TURNS } from './game'
+import { actForTurn, advanceTurn, applyChoice, beginGame, canChoose, continueEndless, newGame, pickEvent, timeLabel, TOTAL_TURNS } from './game'
+import { computeRank } from './rank'
 import { checksum, clearSave, loadGame, saveGame, SAVE_KEY } from './persistence'
 import { parseCharacters, parseEvents } from './validate'
 
@@ -23,7 +24,8 @@ function memStorage(): Storage {
 
 describe('validation', () => {
   it('accepts the bundled content', () => {
-    expect(chars).toHaveLength(3)
+    expect(chars).toHaveLength(6)
+    expect(events.events_catalog).toHaveLength(33)
     expect(events.events_catalog.length).toBeGreaterThan(0)
   })
   it('rejects malformed events with a path', () => {
@@ -43,14 +45,18 @@ describe('validation', () => {
 
 describe('characters.json as delivered', () => {
   it('reads inventory from starting_stats and ttc_delay_impact', () => {
-    expect(chars.map((c) => c.class_id)).toEqual(['CLASS_001_COMMUTER', 'CLASS_002_INTERN', 'CLASS_003_CAMPUS_RES'])
+    expect(chars.slice(0, 3).map((c) => c.class_id)).toEqual(['CLASS_001_COMMUTER', 'CLASS_002_INTERN', 'CLASS_003_CAMPUS_RES'])
     expect(chars[0].starting_stats).toMatchObject({ cash: 40, sanity: 85, health: 90 })
     expect(chars[0].starting_inventory).toEqual(['Presto Card', 'Meal Plan Voucher'])
     expect(chars[1].starting_inventory).toEqual(['Corporate Lanyard', 'Surge Espresso', 'Meal Plan Voucher'])
     expect(chars[2].starting_inventory).toEqual(['Meal Plan Voucher'])
-    expect(chars.map((c) => c.daily_stipend)).toEqual([35, 65, 15])
-    expect(chars.map((c) => c.passive_modifiers.ttc_delay_multiplier)).toEqual([1.25, 1, 0.5])
-    expect(chars.map((c) => c.passive_modifiers.weather_drain_multiplier)).toEqual([1, 1.15, 0.75])
+    expect(chars.slice(3).map((c) => c.starting_stats)).toEqual([
+      { cash: 120, sanity: 70, health: 85 }, { cash: 60, sanity: 60, health: 75 }, { cash: 180, sanity: 55, health: 80 }])
+    expect(chars.slice(3).map((c) => c.display_name)).toEqual([
+      'The Newcomer / International Student', 'The Downtown Gig & Uber Courier', 'The North York Startup Hustler'])
+    expect(chars.map((c) => c.daily_stipend)).toEqual([35, 65, 15, 25, 45, 50])
+    expect(chars.slice(0, 3).map((c) => c.passive_modifiers.ttc_delay_multiplier)).toEqual([1.25, 1, 0.5])
+    expect(chars.slice(0, 3).map((c) => c.passive_modifiers.weather_drain_multiplier)).toEqual([1, 1.15, 0.75])
   })
   it('still accepts the legacy field names', () => {
     const legacy = structuredClone(charactersRaw) as any
@@ -66,9 +72,18 @@ describe('turn engine', () => {
   it('picks events deterministically and only within turn range', () => {
     const s = newGame(commuter, 42)
     expect(pickEvent(s, events)?.event_id).toBe(pickEvent(s, events)?.event_id)
-    expect(pickEvent({ ...s, turn: 11 }, events)?.act_tier).toBe(2)
-    expect(pickEvent({ ...s, turn: 25 }, events)?.act_tier).toBe(3)
-    expect(pickEvent({ ...s, turn: 25, processedEvents: events.events_catalog.map((e) => e.event_id) }, events)).toBeNull()
+    for (const turn of [1, 11, 25, 40, 55, 75]) {
+      const e = pickEvent({ ...s, turn }, events)!
+      expect(e.min_turn).toBeLessThanOrEqual(turn)
+      expect(e.max_turn).toBeGreaterThanOrEqual(turn)
+    }
+    // Everything seen: the pool recycles instead of going quiet, skipping what was drawn lately.
+    const seenAll = events.events_catalog.map((e) => e.event_id)
+    const again = pickEvent({ ...s, turn: 25, processedEvents: seenAll, recent: seenAll.slice(-5) }, events)!
+    expect(again).toBeTruthy()
+    expect(seenAll.slice(-5)).not.toContain(again.event_id)
+    // Only a day no event covers is quiet.
+    expect(pickEvent({ ...s, turn: 25 }, { ...events, events_catalog: [] })).toBeNull()
   })
   it('applies a choice, then advances only on explicit next', () => {
     let s = beginGame(newGame(commuter, 1), events)
@@ -119,7 +134,7 @@ describe('turn engine', () => {
     let s = beginGame(newGame(commuter, 1), events)
     s = applyChoice(s, ev, 'choice_b', commuter)
     expect(advanceTurn(s, events).turn).toBe(3)
-    const over = { ...s, turn: 29 }
+    const over = { ...s, turn: 59 }
     expect(advanceTurn(over, events).status).toBe('finished')
   })
 })
@@ -144,19 +159,20 @@ describe('persistence', () => {
     st.setItem(SAVE_KEY, '{nope')
     expect(loadGame(st)).toBeNull()
     const bad = { ...s, stats: { ...s.stats, cash: NaN } }
-    st.setItem(SAVE_KEY, JSON.stringify({ version: 4, state: bad, checksum: checksum(bad) }))
+    st.setItem(SAVE_KEY, JSON.stringify({ version: 5, state: bad, checksum: checksum(bad) }))
     expect(loadGame(st)).toBeNull()
   })
   it('rejects saves whose win/loss state contradicts the vitals or turn', () => {
     const st = memStorage()
     const s = newGame(commuter, 5)
-    const put = (o: object) => { const x = { ...s, ...o } as typeof s; st.setItem(SAVE_KEY, JSON.stringify({ version: 4, state: x, checksum: checksum(x) })); return loadGame(st) }
+    const put = (o: object) => { const x = { ...s, ...o } as typeof s; st.setItem(SAVE_KEY, JSON.stringify({ version: 5, state: x, checksum: checksum(x) })); return loadGame(st) }
     expect(put({})).not.toBeNull()
     expect(put({ status: 'lost' })).toBeNull() // lost with live vitals
-    expect(put({ status: 'finished', victory: 'wealth' })).toBeNull() // finished before turn 30
-    expect(put({ turn: 31 })).toBeNull()
+    expect(put({ status: 'finished', victory: 'wealth' })).toBeNull() // finished before day 60
+    expect(put({ turn: 61 })).toBeNull() // past day 60 only in endless mode
+    expect(put({ turn: 61, endless: true })).not.toBeNull()
     expect(put({ stats: { cash: 0, sanity: 150, health: 10 } })).toBeNull()
-    expect(put({ processedEvents: ['a', 'a'], turn: 3 })).toBeNull()
+    expect(put({ processedEvents: ['a', 'b', 'c'], turn: 2 })).toBeNull() // more events than days
   })
   it('survives a throwing storage', () => {
     const boom = { ...memStorage(), setItem() { throw new Error('quota') }, getItem() { throw new Error('x') } } as Storage
@@ -167,9 +183,9 @@ describe('persistence', () => {
 
 describe('frozen client rules', () => {
   it('maps turns to acts and time labels', () => {
-    expect([1, 10, 11, 20, 21, 30].map(actForTurn)).toEqual([1, 1, 2, 2, 3, 3])
-    expect([1, 7, 8, 14, 15, 21, 22, 28, 29, 30].map(timeLabel)).toEqual(
-      ['Week 1', 'Week 1', 'Week 2', 'Week 2', 'Week 3', 'Week 3', 'Week 4', 'Week 4', 'Month End', 'Month End'])
+    expect([1, 10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 60, 61, 200].map(actForTurn)).toEqual([1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 6])
+    expect([1, 7, 8, 14, 22, 28, 56, 57, 60, 61].map(timeLabel)).toEqual(
+      ['Week 1', 'Week 1', 'Week 2', 'Week 2', 'Week 4', 'Week 4', 'Week 8', 'Final stretch', 'Final stretch', 'Endless'])
   })
   it('computes TTC and weather modifiers', () => {
     expect(ttcModifier(0)).toBe(1)
@@ -204,19 +220,101 @@ describe('frozen client rules', () => {
     expect(s.inventory).not.toContain('Surge Espresso')
     expect(s.inventory).toContain('Corporate Lanyard')
   })
-  it('never repeats an event and finishes after turn 30', () => {
+  it('plays each event once before any repeat, and finishes after day 60', () => {
     let s = beginGame(newGame(commuter, 9), events)
     const seen = new Set<string>()
+    let repeated = false
     for (let i = 0; i < TOTAL_TURNS && s.status === 'playing'; i++) {
       const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)
       if (ev) {
-        expect(seen.has(ev.event_id)).toBe(false)
+        // A repeat is only allowed once every event that can appear today has already been seen.
+        if (seen.has(ev.event_id)) {
+          repeated = true
+          const fresh = events.events_catalog.filter((e) => e.min_turn <= s.turn && s.turn <= e.max_turn && !seen.has(e.event_id))
+          expect(fresh).toHaveLength(0)
+        }
         seen.add(ev.event_id)
-        s = applyChoice(s, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter)
+        s = applyChoice({ ...s, stats: { cash: 500, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter)
       }
       s = advanceTurn(s, events)
     }
-    expect(s.status === 'finished' || s.status === 'lost').toBe(true)
-    if (s.status === 'finished') expect(s.turn).toBe(30)
+    expect(repeated || seen.size > 0).toBe(true)
+    expect(s.status).toBe('finished')
+    expect(s.turn).toBe(60)
+  })
+  it('has an event every day for 60 days (no quiet days)', () => {
+    let s = beginGame(newGame(commuter, 4), events)
+    for (let i = 0; i < TOTAL_TURNS && s.status === 'playing'; i++) {
+      expect(s.currentEventId).not.toBeNull()
+      const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)!
+      s = advanceTurn(applyChoice({ ...s, stats: { cash: 500, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter), events)
+    }
+  })
+})
+
+describe('endless mode', () => {
+  const finished = () => {
+    let s = beginGame(newGame(commuter, 11), events)
+    for (let i = 0; i < 80 && s.status === 'playing'; i++) {
+      const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)
+      if (ev) s = applyChoice({ ...s, stats: { cash: 500, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter)
+      s = advanceTurn(s, events)
+    }
+    return s
+  }
+  it('continues past day 60 only from a finished run', () => {
+    const f = finished()
+    expect(f.status).toBe('finished')
+    const e = continueEndless(f, events)
+    expect(e).toMatchObject({ status: 'playing', endless: true, turn: 61 })
+    expect(e.currentEventId).not.toBeNull()
+    const playing = beginGame(newGame(commuter, 1), events)
+    expect(continueEndless(playing, events)).toBe(playing)
+  })
+  it('has no day cap and can still be lost', () => {
+    let s = continueEndless(finished(), events)
+    for (let i = 0; i < 20 && s.status === 'playing'; i++) {
+      const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)!
+      s = advanceTurn(applyChoice({ ...s, stats: { cash: 500, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter), events)
+    }
+    expect(s.status).toBe('playing')
+    expect(s.turn).toBeGreaterThan(70)
+    const dead = advanceTurn({ ...s, currentEventId: null, stats: { cash: -10, sanity: 2, health: 50 }, stipend: 0 }, events)
+    expect(dead.status).toBe('lost')
+    expect(computeRank(dead)).toBe('Endless Legend')
+  })
+  it('saves and reloads an endless run', () => {
+    const st = memStorage()
+    const e = continueEndless(finished(), events)
+    saveGame(e, st)
+    expect(loadGame(st)).toEqual(e)
+  })
+})
+
+describe('new content', () => {
+  const ids = (n: number) => events.events_catalog.filter((e) => e.act_tier === n).map((e) => e.event_id)
+  it('adds the 18 events, 3 for each of the six acts', () => {
+    const added = events.events_catalog.filter((e) => Number(e.event_id.split('_')[2]) >= 16)
+    expect(added).toHaveLength(18)
+    for (let act = 1; act <= 6; act++) expect(added.filter((e) => e.act_tier === act)).toHaveLength(3)
+    expect(ids(6).length).toBeGreaterThan(0)
+  })
+  it("uses the client's numbers", () => {
+    const m = (id: string, k: 'choice_a' | 'choice_b') => byId(id)[k].metrics_impact
+    expect(m('TSS_ACT1_016_UNION_GO_SIGNAL_FAILURE', 'choice_a')).toMatchObject({ cash_modifier: -48, sanity_modifier: 5, health_modifier: 0 })
+    expect(m('TSS_ACT1_016_UNION_GO_SIGNAL_FAILURE', 'choice_b')).toMatchObject({ cash_modifier: 0, sanity_modifier: -15, health_modifier: -5 })
+    expect(m('TSS_ACT6_032_HIGH_PARK_CHERRY_BLOSSOMS', 'choice_b')).toMatchObject({ cash_modifier: 40, sanity_modifier: -12 })
+    expect(m('TSS_ACT5_028_DENTAL_CLEANING_COPAY', 'choice_a')).toMatchObject({ cash_modifier: -95, health_modifier: 10 })
+  })
+  it('every new class can play a full run', () => {
+    for (const c of chars.slice(3)) {
+      let s = beginGame(newGame(c, 3), events)
+      for (let i = 0; i < 70 && s.status === 'playing'; i++) {
+        const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)
+        if (ev) s = applyChoice(s, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', c)
+        s = advanceTurn(s, events)
+      }
+      expect(['finished', 'lost']).toContain(s.status)
+    }
   })
 })

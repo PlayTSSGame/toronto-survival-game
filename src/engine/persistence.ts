@@ -1,8 +1,8 @@
 import type { GameState, Stats } from '../types'
 import { STAT_MAX, TOTAL_TURNS } from './game'
 
-export const SAVE_KEY = 'tss.save.v4'
-const VERSION = 4
+export const SAVE_KEY = 'tss.save.v5'
+const VERSION = 5
 
 interface Envelope {
   version: number
@@ -26,18 +26,18 @@ const isNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v)
 function coherent(s: GameState): boolean {
   const st = s.stats as Stats | undefined
   if (!st || !isNum(st.cash) || !isNum(st.sanity) || !isNum(st.health)) return false
-  if (!Number.isInteger(s.turn) || s.turn < 1 || s.turn > TOTAL_TURNS) return false
+  if (!Number.isInteger(s.turn) || s.turn < 1 || (!s.endless && s.turn > TOTAL_TURNS)) return false
+  if (typeof s.endless !== 'boolean' || !Array.isArray(s.recent)) return false
   if (typeof s.characterId !== 'string') return false
   if (!isNum(s.stipend) || s.stipend < 0) return false
   if (!Array.isArray(s.inventory) || s.inventory.some((i) => typeof i !== 'string')) return false
   if (!Array.isArray(s.processedEvents) || s.processedEvents.length > s.turn) return false
-  if (new Set(s.processedEvents).size !== s.processedEvents.length) return false
   if (st.sanity > STAT_MAX || st.health > STAT_MAX || st.sanity < 0 || st.health < 0) return false
   const dead = st.sanity <= 0 || st.health <= 0
   // Win/loss prerequisites must agree with the vitals and the turn counter.
   if (s.status === 'playing') return !dead && s.victory === null
   if (s.status === 'lost') return dead && s.victory === null
-  if (s.status === 'finished') return !dead && s.turn === TOTAL_TURNS && s.victory !== null
+  if (s.status === 'finished') return !dead && s.turn === TOTAL_TURNS && !s.endless && s.victory !== null
   return false
 }
 

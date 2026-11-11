@@ -6,7 +6,7 @@
       "event_id": "TSS_ACT1_001_TTC_BLIZZARD",
       "act_tier": 1,
       "min_turn": 1,
-      "max_turn": 10,
+      "max_turn": 30,
       "location": "Bloor-Yonge Station",
       "scenario_text": "An unpredicted mid-morning blizzard hits the GTA. The TTC Line 1 is entirely suspended between Bloor-Yonge and Union.",
       "api_dependencies": {
@@ -38,7 +38,7 @@
       "event_id": "TSS_ACT1_002_LOBLAWS_RUN",
       "act_tier": 1,
       "min_turn": 1,
-      "max_turn": 10,
+      "max_turn": 30,
       "location": "Loblaws, Bloor St",
       "scenario_text": "You run into a local supermarket for exactly three basic grocery items, but grocery math hits you hard at the checkout counter.",
       "api_dependencies": null,
@@ -67,7 +67,7 @@
       "event_id": "TSS_ACT1_003_PRESTO_DRAIN",
       "act_tier": 1,
       "min_turn": 1,
-      "max_turn": 10,
+      "max_turn": 30,
       "location": "Union Station",
       "scenario_text": "You tap your Presto card at the turnstile and hear a loud double-beep. Your balance is deeply in the negative.",
       "api_dependencies": null,
@@ -96,7 +96,7 @@
       "event_id": "TSS_ACT1_004_YORK_SHUTTLE",
       "act_tier": 1,
       "min_turn": 1,
-      "max_turn": 10,
+      "max_turn": 30,
       "location": "York University",
       "scenario_text": "The inter-campus shuttle bus is completely full, and the outdoor lineup stretching past the sidewalk is moving at zero speed.",
       "api_dependencies": {
@@ -128,7 +128,7 @@
       "event_id": "TSS_ACT1_005_EATON_SPEND",
       "act_tier": 1,
       "min_turn": 1,
-      "max_turn": 10,
+      "max_turn": 30,
       "location": "Eaton Centre",
       "scenario_text": "You walk through the Eaton Centre to kill time between classes and find a massive pop-up clearance sale on local brand apparel.",
       "api_dependencies": null,
@@ -157,7 +157,7 @@
       "event_id": "TSS_ACT2_006_MIDTERM_CRUNCH",
       "act_tier": 2,
       "min_turn": 11,
-      "max_turn": 20,
+      "max_turn": 50,
       "location": "U of T Campus",
       "scenario_text": "It is 11:30 PM. Your major midterm exam is in exactly 9 hours and you have only reviewed 2 out of 11 heavy slide decks.",
       "api_dependencies": null,
@@ -186,7 +186,7 @@
       "event_id": "TSS_ACT2_007_TIM_HORTONS_LINE",
       "act_tier": 2,
       "min_turn": 11,
-      "max_turn": 20,
+      "max_turn": 50,
       "location": "U of T Campus",
       "scenario_text": "The campus Tim Hortons line has 40 people in it, and your lecture starts in 10 minutes. Your brain desperately demands caffeine.",
       "api_dependencies": null,
@@ -215,7 +215,7 @@
       "event_id": "TSS_ACT2_008_DUNDAS_SQUARE",
       "act_tier": 2,
       "min_turn": 11,
-      "max_turn": 20,
+      "max_turn": 50,
       "location": "Yonge-Dundas Station",
       "scenario_text": "As you exit Yonge-Dundas station, an aggressive street marketer approaches you trying to block your path with a clipboard entry form.",
       "api_dependencies": null,
@@ -244,7 +244,7 @@
       "event_id": "TSS_ACT2_009_WIFI_COLLAPSE",
       "act_tier": 2,
       "min_turn": 11,
-      "max_turn": 20,
+      "max_turn": 50,
       "location": "U of T Campus",
       "scenario_text": "The campus Eduroam Wi-Fi network completely collapses right in the middle of your timed online quiz submission window.",
       "api_dependencies": null,
@@ -273,7 +273,7 @@
       "event_id": "TSS_ACT2_010_TEXTBOOK_PAYWALL",
       "act_tier": 2,
       "min_turn": 11,
-      "max_turn": 20,
+      "max_turn": 50,
       "location": "U of T Campus",
       "scenario_text": "Your economics professor locks 20% of your total class grade behind a digital homework portal access code that must be bought new.",
       "api_dependencies": null,
@@ -302,7 +302,7 @@
       "event_id": "TSS_ACT3_011_RENT_INCREASE",
       "act_tier": 3,
       "min_turn": 21,
-      "max_turn": 30,
+      "max_turn": 9999,
       "location": "King West",
       "scenario_text": "Your student house landlord slips an unauthorized notice under your door demanding an immediate illegal rent increase for winter heating.",
       "api_dependencies": null,
@@ -331,7 +331,7 @@
       "event_id": "TSS_ACT3_012_STREETCAR_TRAP",
       "act_tier": 3,
       "min_turn": 21,
-      "max_turn": 30,
+      "max_turn": 9999,
       "location": "Spadina Ave",
       "scenario_text": "Your evening Spadina streetcar gets completely gridlocked behind an illegally parked delivery van during a heavy freezing downpour.",
       "api_dependencies": {
@@ -363,7 +363,7 @@
       "event_id": "TSS_ACT3_013_LAUNDRY_WARS",
       "act_tier": 3,
       "min_turn": 21,
-      "max_turn": 30,
+      "max_turn": 9999,
       "location": "Student Residence",
       "scenario_text": "Someone takes your wet clothes out of the student building dryer and throws them on top of the dirty counter to steal your cycle time.",
       "api_dependencies": null,
@@ -392,7 +392,7 @@
       "event_id": "TSS_ACT3_014_MEAL_PLAN_END",
       "act_tier": 3,
       "min_turn": 21,
-      "max_turn": 30,
+      "max_turn": 9999,
       "location": "Campus Dining Hall",
       "scenario_text": "Your student cafeteria card registers $0.00 and your fridge contains nothing but a single, ancient jar of store-brand condiment.",
       "api_dependencies": null,
@@ -421,7 +421,7 @@
       "event_id": "TSS_ACT3_015_BLOOR_YONGE_CRUSH",
       "act_tier": 3,
       "min_turn": 21,
-      "max_turn": 30,
+      "max_turn": 9999,
       "location": "Bloor-Yonge Station",
       "scenario_text": "The Bloor-Yonge subway platform is at emergency capacity. People are pushing against the yellow line as trains pass empty.",
       "api_dependencies": {
@@ -443,6 +443,538 @@
           "cash_modifier": 0.0,
           "sanity_modifier": -15,
           "health_modifier": -15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_016_UNION_GO_SIGNAL_FAILURE",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 30,
+      "location": "Union Station",
+      "scenario_text": "A signal failure at Union freezes every GO train. The departure board is a wall of red, and the platform is filling up fast.",
+      "api_dependencies": {
+        "transit_delay_key": "go_transit_delay_mins"
+      },
+      "choice_a": {
+        "action_text": "Take an emergency Uber surge ride.",
+        "metrics_impact": {
+          "cash_modifier": -48.0,
+          "sanity_modifier": 5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Wait 90 minutes on the packed platform.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -15,
+          "health_modifier": -5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_017_INTERNET_OUTAGE_DEADLINE",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 30,
+      "location": "Your Apartment",
+      "scenario_text": "Rogers and Bell both go down an hour before a big deadline. The router blinks at you like it knows.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Buy a café latte and work from a noisy coffee shop.",
+        "metrics_impact": {
+          "cash_modifier": -14.0,
+          "sanity_modifier": -5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Burn through mobile hotspot overage data.",
+        "metrics_impact": {
+          "cash_modifier": -35.0,
+          "sanity_modifier": 5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT1_018_ROOMMATE_ATE_MEALPREP",
+      "act_tier": 1,
+      "min_turn": 1,
+      "max_turn": 30,
+      "location": "Your Apartment",
+      "scenario_text": "You open the fridge for your meal-prep containers. They are empty, washed, and sitting on the rack like nothing happened.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Order late-night shawarma takeout.",
+        "metrics_impact": {
+          "cash_modifier": -24.0,
+          "sanity_modifier": 8,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Eat plain crackers and hold a silent grudge.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -12,
+          "health_modifier": -5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_019_POLAR_VORTEX_HEATER",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 40,
+      "location": "Your Condo",
+      "scenario_text": "A January polar vortex hits and the condo heater picks tonight to quit. The windows are growing frost on the inside.",
+      "api_dependencies": {
+        "weather_severity_key": "env_canada_temp_c"
+      },
+      "choice_a": {
+        "action_text": "Buy a space heater and heavy thermal socks.",
+        "metrics_impact": {
+          "cash_modifier": -65.0,
+          "sanity_modifier": 0,
+          "health_modifier": 10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Wear 4 hoodies indoors and tough it out.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -10,
+          "health_modifier": -15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_020_RENT_GUIDELINE_NOTICE",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 40,
+      "location": "Your Apartment",
+      "scenario_text": "A notice slides under the door: an above-guideline rent increase. The letter is calm and polite, which makes it worse.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Pay a paralegal consultation fee to fight it at the LTB.",
+        "metrics_impact": {
+          "cash_modifier": -75.0,
+          "sanity_modifier": 10,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Stress-read Reddit tenant threads all night.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -18,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT2_021_SURPRISE_SNOWSTORM",
+      "act_tier": 2,
+      "min_turn": 11,
+      "max_turn": 40,
+      "location": "Your Street",
+      "scenario_text": "A surprise snowstorm buries the city overnight. The sidewalks are unplowed, and the grocery run you planned just got serious.",
+      "api_dependencies": {
+        "weather_severity_key": "env_canada_snow_cm"
+      },
+      "choice_a": {
+        "action_text": "Order grocery delivery with a winter tip.",
+        "metrics_impact": {
+          "cash_modifier": -42.0,
+          "sanity_modifier": 0,
+          "health_modifier": 5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Trudge 2 km through slush in wet sneakers.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -8,
+          "health_modifier": -15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT3_022_DUNDAS_SQUARE_PREACHER",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 50,
+      "location": "Yonge-Dundas Square",
+      "scenario_text": "A street preacher with a megaphone stops the Dundas Square crowd dead. Everyone is shuffling, nobody is moving.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Put on noise-cancelling headphones and detour through the PATH.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Get trapped in the crowd and miss your connection.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -15,
+          "health_modifier": -5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT3_023_KING_STREETCAR_DOUBLE_PARKED",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 50,
+      "location": "King Street",
+      "scenario_text": "A delivery van is double-parked right on the King streetcar tracks. Your streetcar stops. So does everything else.",
+      "api_dependencies": {
+        "transit_delay_key": "ttc_streetcar_delay_mins"
+      },
+      "choice_a": {
+        "action_text": "Hop off and power-walk 12 blocks in the rain.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -5,
+          "health_modifier": -10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Sit motionless for 40 minutes.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -15,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT3_024_SERVICEONTARIO_HEALTH_CARD",
+      "act_tier": 3,
+      "min_turn": 21,
+      "max_turn": 50,
+      "location": "ServiceOntario",
+      "scenario_text": "Your health card needs renewing, and the ServiceOntario line is already three hours long. The number on your ticket is 214.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Take an unpaid half-day off to wait it out.",
+        "metrics_impact": {
+          "cash_modifier": -45.0,
+          "sanity_modifier": -10,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Leave early and risk expired-coverage anxiety.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -12,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT4_025_RAPTORS_LEAFS_WATCH_PARTY",
+      "act_tier": 4,
+      "min_turn": 31,
+      "max_turn": 60,
+      "location": "Sports Bar, Downtown",
+      "scenario_text": "A friend texts a last-minute invite to watch the Raptors and Leafs game. The group chat is already celebrating.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Go out for wings and drinks with friends.",
+        "metrics_impact": {
+          "cash_modifier": -55.0,
+          "sanity_modifier": 20,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Stay home to save money and watch highlights alone.",
+        "metrics_impact": {
+          "cash_modifier": 5.0,
+          "sanity_modifier": -8,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT4_026_ST_LAWRENCE_MARKET_RUN",
+      "act_tier": 4,
+      "min_turn": 31,
+      "max_turn": 60,
+      "location": "St. Lawrence Market",
+      "scenario_text": "It is Saturday at St. Lawrence Market. The stalls smell amazing and the peameal bacon sandwich line is looking at you.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Stock up on fresh peameal bacon and produce.",
+        "metrics_impact": {
+          "cash_modifier": -38.0,
+          "sanity_modifier": 8,
+          "health_modifier": 12,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Stick to instant ramen for another week.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": 0,
+          "health_modifier": -10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT4_027_CROSSTOWN_DETOUR_MAZE",
+      "act_tier": 4,
+      "min_turn": 31,
+      "max_turn": 60,
+      "location": "Eglinton Ave",
+      "scenario_text": "Crosstown construction closes your stop and the detour signs point three different ways. Nobody around you knows either.",
+      "api_dependencies": {
+        "transit_delay_key": "ttc_subway_delay_mins"
+      },
+      "choice_a": {
+        "action_text": "Pay for a Bikeshare pass and pedal around.",
+        "metrics_impact": {
+          "cash_modifier": -12.0,
+          "sanity_modifier": 0,
+          "health_modifier": 5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Get lost transferring between 3 shuttle buses.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -15,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT5_028_DENTAL_CLEANING_COPAY",
+      "act_tier": 5,
+      "min_turn": 41,
+      "max_turn": 9999,
+      "location": "Dental Clinic",
+      "scenario_text": "A routine dental cleaning turns up a surprise: your insurance does not cover all of it. The receptionist smiles at you gently.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Pay the out-of-pocket co-pay now.",
+        "metrics_impact": {
+          "cash_modifier": -95.0,
+          "sanity_modifier": 0,
+          "health_modifier": 10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Delay the appointment and endure the toothache.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -10,
+          "health_modifier": -15,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT5_029_KENSINGTON_MARKET_TEMPTATION",
+      "act_tier": 5,
+      "min_turn": 41,
+      "max_turn": 9999,
+      "location": "Kensington Market",
+      "scenario_text": "Kensington Market is all vintage jackets and pour-over espresso. Your wallet knows exactly what is going to happen.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Treat yourself to thrift finds and pour-over coffee.",
+        "metrics_impact": {
+          "cash_modifier": -35.0,
+          "sanity_modifier": 15,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Window-shop only and walk away disciplined.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": 5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT5_030_PEARSON_PICKUP_NIGHTMARE",
+      "act_tier": 5,
+      "min_turn": 41,
+      "max_turn": 9999,
+      "location": "Pearson Airport",
+      "scenario_text": "A friend lands at Pearson and wants a pickup. Arrivals is a traffic maze, and the security guard has seen you drive by already.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Pay for express garage parking to meet them inside.",
+        "metrics_impact": {
+          "cash_modifier": -28.0,
+          "sanity_modifier": 5,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Circle Terminal 1 arrivals 7 times while security yells.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -15,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT6_031_NO_FRILLS_FLASH_SALE",
+      "act_tier": 6,
+      "min_turn": 51,
+      "max_turn": 9999,
+      "location": "No Frills",
+      "scenario_text": "No Frills has a flash sale on pantry staples. The shelves are emptying and the bags look heavy.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Haul 4 heavy bags home on the subway.",
+        "metrics_impact": {
+          "cash_modifier": -45.0,
+          "sanity_modifier": -5,
+          "health_modifier": 10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Skip the sale and buy overpriced convenience snacks.",
+        "metrics_impact": {
+          "cash_modifier": -18.0,
+          "sanity_modifier": 0,
+          "health_modifier": -5,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT6_032_HIGH_PARK_CHERRY_BLOSSOMS",
+      "act_tier": 6,
+      "min_turn": 51,
+      "max_turn": 9999,
+      "location": "High Park",
+      "scenario_text": "The cherry blossoms are out in High Park on a warm Sunday. Everyone is outside, and your laptop is quietly glowing at home.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Spend a sunny afternoon relaxing outdoors.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": 15,
+          "health_modifier": 10,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Work overtime from your laptop instead.",
+        "metrics_impact": {
+          "cash_modifier": 40.0,
+          "sanity_modifier": -12,
+          "health_modifier": 0,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      }
+    },
+    {
+      "event_id": "TSS_ACT6_033_WATERFRONT_SUNSET_RUN",
+      "act_tier": 6,
+      "min_turn": 51,
+      "max_turn": 9999,
+      "location": "Harbourfront",
+      "scenario_text": "The sun is setting over Lake Ontario and the Harbourfront breeze is perfect. Your couch has a strong opinion too.",
+      "api_dependencies": {},
+      "choice_a": {
+        "action_text": "Go for an evening jog by Lake Ontario.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": 12,
+          "health_modifier": 12,
+          "turns_consumed": 1
+        },
+        "required_inventory_item": null
+      },
+      "choice_b": {
+        "action_text": "Doomscroll Toronto housing prices on your couch.",
+        "metrics_impact": {
+          "cash_modifier": 0.0,
+          "sanity_modifier": -12,
+          "health_modifier": 0,
           "turns_consumed": 1
         },
         "required_inventory_item": null

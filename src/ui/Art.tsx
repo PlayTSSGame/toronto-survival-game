@@ -80,6 +80,33 @@ export function Avatar({ id, size = 64, mood = 'happy', hurt = false }: { id: st
           <rect x="51" y="30" width="10" height="16" rx="5" fill="#4CC38A" stroke="#121212" strokeWidth="3" />
         </>
       )}
+      {kind === 'newcomer' && (
+        <>
+          <circle cx="32" cy="37" r="19" {...FACE} />
+          <path d="M12 33a20 20 0 0 1 40 0z" fill="#FF6FB5" stroke="#121212" strokeWidth="3" strokeLinejoin="round" />
+          <rect x="10" y="30" width="44" height="8" rx="4" fill="#fff" stroke="#121212" strokeWidth="3" />
+          <circle cx="32" cy="9" r="6" fill="#fff" stroke="#121212" strokeWidth="3" />
+          <path d="M18 54q14 8 28 0" fill="none" stroke="#4CC9F0" strokeWidth="6" strokeLinecap="round" />
+        </>
+      )}
+      {kind === 'courier' && (
+        <>
+          <circle cx="32" cy="36" r="19" {...FACE} />
+          <path d="M11 33a21 21 0 0 1 42 0z" fill="#FF9F43" stroke="#121212" strokeWidth="3" strokeLinejoin="round" />
+          <path d="M9 33h46" stroke="#121212" strokeWidth="3" strokeLinecap="round" />
+          <path d="M32 12v21M22 15l-3 18M42 15l3 18" stroke="#121212" strokeWidth="2.5" strokeLinecap="round" />
+          <rect x="22" y="52" width="20" height="9" rx="2" fill="#2EE6A6" stroke="#121212" strokeWidth="2.5" />
+        </>
+      )}
+      {kind === 'hustler' && (
+        <>
+          <circle cx="32" cy="34" r="20" {...FACE} />
+          <path d="M12 30c1-13 10-18 21-17 9 1 17 6 19 17-6-5-13-7-20-7s-14 2-20 7z" fill="#121212" />
+          <path d="M52 32v10a6 6 0 0 1-6 6h-5" fill="none" stroke="#A78BFA" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="40" cy="48" r="3" fill="#A78BFA" stroke="#121212" strokeWidth="2" />
+          <path d="M24 53l8 9 8-9z" fill="#fff" stroke="#121212" strokeWidth="2.5" strokeLinejoin="round" />
+        </>
+      )}
       {kind === 'other' && (
         <circle cx="32" cy="34" r="20" {...FACE} />
       )}

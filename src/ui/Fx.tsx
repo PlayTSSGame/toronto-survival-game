@@ -124,9 +124,9 @@ function skyAt(t: number): [string, string] {
   return [mix(a0, a1), mix(b0, b1)]
 }
 
-/** Thin sky banner: dawn on day 1, night by day 30. The sun crosses and becomes the moon. */
+/** Thin sky banner: dawn on day 1, night by the last day (60). The sun crosses and becomes the moon. */
 export function Sky({ day }: { day: number }) {
-  const t = (day - 1) / 29
+  const t = Math.min(1, (day - 1) / 59)
   const [top, bottom] = skyAt(t)
   const night = t > 0.72
   return (

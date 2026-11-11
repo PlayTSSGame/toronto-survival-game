@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import charactersRaw from '../data/characters.json'
 import eventsRaw from '../data/events.json'
-import { advanceTurn, applyChoice, beginGame, FALLBACK_ENV, newGame } from '../engine/game'
+import { advanceTurn, applyChoice, beginGame, continueEndless, FALLBACK_ENV, newGame } from '../engine/game'
 import { fetchEnvironment } from '../engine/live'
 import { clearSave, loadGame, saveGame } from '../engine/persistence'
 import { parseCharacters, parseEvents } from '../engine/validate'
@@ -59,6 +59,10 @@ export function useGame() {
     if (ok && effective) setState(advanceTurn(effective, ok.events, env))
   }
 
+  const keepSurviving = () => {
+    if (ok && effective) setState(continueEndless(effective, ok.events))
+  }
+
   const reset = () => {
     clearSave()
     setState(null)
@@ -68,6 +72,6 @@ export function useGame() {
     error: 'error' in content ? content.error : null,
     characters: ok?.characters.classes ?? [],
     state: effective, char, event, env,
-    start, choose, next, reset,
+    start, choose, next, reset, keepSurviving,
   }
 }

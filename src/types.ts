@@ -48,7 +48,7 @@ export interface ApiDependencies {
 
 export interface GameEvent {
   event_id: string
-  act_tier: 1 | 2 | 3
+  act_tier: 1 | 2 | 3 | 4 | 5 | 6
   min_turn: number
   max_turn: number
   /** Optional place name shown in the header while this event is active. */
@@ -108,4 +108,8 @@ export interface GameState {
   lossReason: string | null
   /** Highest victory achieved when the run finishes (wealth > asset > endurance). */
   victory: Victory | null
+  /** True once the player chose "Keep Surviving" after day 60: no day cap, events recycle. */
+  endless: boolean
+  /** Most recently drawn event ids (oldest first), used to avoid repeats once the pool runs dry. */
+  recent: string[]
 }

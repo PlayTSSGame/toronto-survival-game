@@ -2,6 +2,7 @@ import type { GameState } from '../types'
 
 /**
  * Comedic Toronto rank. Precedence (first match wins):
+ *  0. endless run (after day 60) -> Endless Legend
  *  1. lost on health            -> Frozen Sub-Way Dweller
  *  2. lost on sanity            -> Streetcar Casualty
  *  3. wealth victory            -> Bay Street Executive
@@ -13,6 +14,7 @@ import type { GameState } from '../types'
  * proposals awaiting confirmation.
  */
 export function computeRank(s: GameState): string {
+  if (s.endless) return 'Endless Legend'
   if (s.status === 'lost') return s.stats.health <= 0 ? 'Frozen Sub-Way Dweller' : 'Streetcar Casualty'
   if (s.victory === 'wealth') return 'Bay Street Executive'
   if (s.victory === 'asset') return 'Condo Conqueror'
@@ -22,6 +24,7 @@ export function computeRank(s: GameState): string {
 }
 
 export function outcomeTitle(s: GameState): string {
+  if (s.endless) return s.status === 'lost' ? `Endless run over: survived ${Math.max(0, s.turn - 1)} days` : `Endless mode: day ${s.turn}`
   if (s.status === 'lost') return `Defeated on day ${s.turn}`
   if (s.victory === 'wealth') return 'Wealth victory'
   if (s.victory === 'asset') return 'Asset victory: you bought the condo'

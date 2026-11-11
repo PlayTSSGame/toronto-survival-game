@@ -22,7 +22,7 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 
 ## Layout
 - `src/engine/` pure game logic, no UI imports: `validate` (content parsing), `game` (turn engine, endings), `environment` (weather/TTC modifiers), `live` (feed fetching and caching), `persistence`, `rank` (ranks and share text), `rng`
-- `src/data/` `characters.json` and `events.json`, the client's content (15 events, 5 per act, plus 3 classes)
+- `src/data/` `characters.json` and `events.json`, the client's content (33 events and 6 classes)
 - `src/ui/` React hook (`useGame`), art, effects, settings, sound, share image
 - `src/App.tsx` the single-page view; `src/App.css` styles
 - `server/transit.ts` TTC proxy logic, exposed by `netlify/functions/transit.ts` (Netlify) and `api/transit.ts` (Vercel)
@@ -30,7 +30,8 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 - `scripts/balance.check.ts` the balance report
 
 ## How a run works
-- 30 days. Days 1-10 are Act 1, 11-20 Act 2, 21-30 Act 3. Each day draws one unplayed event from the current act (seeded, so a save replays the same way). No event left means a quiet day.
+- 60 days in 6 acts of 10 days. Each day draws one event whose `min_turn`-`max_turn` window covers the day, preferring events not yet seen (seeded, so a save replays the same way). Once every eligible event has been seen, the pool recycles and skips the last 5 drawn, so there are no quiet days. A day with no covering event is the only quiet day.
+- **Endless mode:** after surviving day 60 the win screen offers "Keep Surviving (Endless Mode)". The run continues with no day cap (act 6 events keep recycling) until sanity or health hits 0. Best days survived and peak cash are kept in the browser (`tss.best.v1`) and shown on the end screen.
 - Each event has two choices. A choice can cost more than one day (`turns_consumed`) and can require an inventory item, which is consumed when used.
 - Negative sanity/health changes on events that depend on TTC and/or weather are multiplied by the class modifier and the live modifier. Cash is uncapped and may go negative; sanity and health stay within 0-100.
 - Days 1-10 floor sanity and health at 1, so Act 1 cannot kill the player.
@@ -44,8 +45,13 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 | Mississauga Commuter | $40 / 85 / 90 | $35 | Presto Card, Meal Plan Voucher | TTC x1.25 |
 | Financial District Intern | $250 / 45 / 75 | $65 | Corporate Lanyard, Surge Espresso, Meal Plan Voucher | weather x1.15 |
 | Campus Residence Dweller | $15 / 65 / 80 | $15 | Meal Plan Voucher | TTC x0.5, weather x0.75 |
+| Newcomer / International Student | $120 / 70 / 85 | $25 | Presto Card, Meal Plan Voucher | none |
+| Downtown Gig & Uber Courier | $60 / 60 / 75 | $45 | Courier Bag, Meal Plan Voucher | none |
+| North York Startup Hustler | $180 / 55 / 80 | $50 | Pitch Deck, Meal Plan Voucher | none |
 
-Two choices need items: Midterm Crunch (A) needs a Surge Espresso (only the Intern starts with one) and a Meal Plan Voucher choice needs a voucher (all three classes start with one).
+The first three are the client's original classes. The last three have starting stats and stipends from the client; their items, home locations and (neutral) modifiers are our defaults.
+
+Two choices need items: Midterm Crunch (A) needs a Surge Espresso (only the Intern starts with one) and a Meal Plan Voucher choice needs a voucher (every class starts with one).
 
 ## Live data
 - **Weather:** Environment Canada MSC GeoMet `swob-realtime`, station TORONTO CITY, called from the browser (CORS `*`). Uses `air_temp` and `pcpn_amt_pst1hr` (1-hour precipitation, mm) from the newest observation less than 3 hours old.
@@ -54,14 +60,14 @@ Two choices need items: Midterm Crunch (A) needs a Surge Espresso (only the Inte
 - **Formulas** (`src/engine/environment.ts`): TTC modifier is `1 + minutes/60` when the delay is above 15 minutes, otherwise 1. Weather modifier is `1 + |temp|/20` below 0 degrees C, or 1.25 above 5 mm of precipitation; the larger wins if both apply.
 
 ## Endings
-Evaluated when day 30 completes with sanity and health above 0 (`src/engine/game.ts`):
-- **Wealth:** cash >= $10,000, day >= 25, and every catalog event played.
+Evaluated when day 60 completes with sanity and health above 0 (`src/engine/game.ts`):
+- **Wealth:** cash >= $10,000, day >= 50, and at least 80% of the catalog's distinct events seen (events can repeat in a 60-day run, so "every event" no longer applies).
 - **Asset (condo):** cash >= $10,000 x (1 + (TTC modifier - 1) + (weather modifier - 1)), using the latest environment snapshot.
-- **Endurance:** reach the end of day 30 alive. This is the ending players actually get.
+- **Endurance:** reach the end of day 60 alive. This is the ending players actually get.
 - Highest wins: wealth, then asset, then endurance.
 
 ### Ranks and sharing (`src/engine/rank.ts`)
-First match wins: lost on health = Frozen Sub-Way Dweller; lost on sanity = Streetcar Casualty; wealth = Bay Street Executive; asset = Condo Conqueror; endurance with negative cash = Overdraft Legend; endurance with sanity >= 50 = Commuter Master; otherwise Tim's Coffee Survivor. Only three rank names came from the client's spec; the rest and the order are our proposals awaiting confirmation.
+First match wins: any endless-mode run = Endless Legend; lost on health = Frozen Sub-Way Dweller; lost on sanity = Streetcar Casualty; wealth = Bay Street Executive; asset = Condo Conqueror; endurance with negative cash = Overdraft Legend; endurance with sanity >= 50 = Commuter Master; otherwise Tim's Coffee Survivor. Only three rank names came from the client's spec; the rest and the order are our proposals awaiting confirmation.
 
 The end screen offers "Copy result" (clipboard API, with a textarea fallback and on-screen text if both fail) and "Save image" (generates a PNG and uses the share sheet where available). Wins show confetti; losses show the reason.
 
@@ -78,14 +84,14 @@ The end screen offers "Copy result" (clipboard API, with a textarea fallback and
 5. Offline: `public/sw.js` caches the app shell after the first visit. It skips `/api/` and cross-origin requests.
 
 ## Swapping in client content
-Replace `src/data/characters.json` and `src/data/events.json` (same schema; `home_location` and `location` are optional extras we added for the map). Content is validated at startup with field-level error messages. Run `npm test`, which checks 5 events per act and plays each character through 30 days. Saves for a removed class are discarded automatically. If the content changes, also run `npm run balance`.
+Replace `src/data/characters.json` and `src/data/events.json` (same schema; `home_location` and `location` are optional extras we added for the map). Content is validated at startup with field-level error messages. Run `npm test`, which checks the event counts and plays each character through 60 days. Saves for a removed class are discarded automatically. If the content changes, also run `npm run balance`.
 
 ## Win/loss feasibility check
-`npm run balance` runs an automated report (about 1 second) over the real content. For each class it tries every possible sequence of choices on 12 different games, plays 500 simulated games as a random and as a careful player, lists choices locked by missing items, and shows which victories are reachable and the most cash ever held. Options: `SEEDS=24 GAMES=2000 ENV=bad STRICT=1 npm run balance` (`ENV=bad` is a 45 minute TTC delay and -20 degrees C; `STRICT=1` exits with an error if any class cannot win).
+`npm run balance` runs an automated report (about 10 seconds) over the real content. For each class it searches choice sequences on 12 different games (bounded by `NODES`, since 60 days is too many paths to list), plays 500 simulated games as a random, a careful and a cash-first player, lists choices locked by missing items, and shows which victories are reachable and the most cash ever held. Options: `SEEDS=24 GAMES=2000 NODES=200000 ENV=bad STRICT=1 npm run balance` (`ENV=bad` is a 45 minute TTC delay and -20 degrees C; `STRICT=1` exits with an error if any class cannot win).
 
 ## Known limits
-- **Wealth and condo wins are unreachable** at the current stipends. Most cash ever held in the balance report: Commuter about $1,045, Intern about $2,125, Campus about $442, against a $10,000 target. The client confirmed surviving day 30 is the true victory for this build; the wealth and asset paths stay wired for a future income/asset-trading update.
-- **Survival is possible for all three classes** (every-choice search wins 12 of 12 games). It is not easy for a random player: the Intern wins 1 of 500 random games but 474 of 500 careful ones; Commuter and Campus win about 70% and 67% of random games.
-- Commuter and Campus cannot take Midterm Crunch choice A (no Surge Espresso). The other choice is always available.
+- **Wealth and condo wins are unreachable** at the current stipends. Peak cash seen in the balance report is about $1,800 (Hustler) against a $10,000 target, so endurance (surviving day 60) is the only ending players actually get. The wealth and asset paths stay wired for a future income/asset-trading update.
+- **60 days is much harder than 30.** A bounded search finds a surviving path for every class, but a careful player wins only roughly 3-30% of games and a random player 0-10% (Commuter, Campus and Newcomer are the hardest). The 18 added events are net-negative by design, so the original 30-day difficulty did not carry over. Retune stipends or recovery events if easier runs are wanted.
+- Only the Intern can take Midterm Crunch choice A (needs a Surge Espresso). The other choice is always available.
 - `BASE_DAILY_DRAIN` is 0 until the client supplies a base cost.
 - Rank names beyond the three from the client's spec are unconfirmed.

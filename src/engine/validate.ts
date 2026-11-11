@@ -90,7 +90,7 @@ function parseEvent(e: unknown, i: number): GameEvent {
   const p = `events_catalog[${i}]`
   if (!isObj(e)) fail(p, 'expected object')
   const tier = num(e, 'act_tier', p)
-  if (tier !== 1 && tier !== 2 && tier !== 3) fail(`${p}.act_tier`, 'expected 1, 2 or 3')
+  if (!Number.isInteger(tier) || tier < 1 || tier > 6) fail(`${p}.act_tier`, 'expected an act from 1 to 6')
   const min = num(e, 'min_turn', p)
   const max = num(e, 'max_turn', p)
   if (min < 1 || max < min) fail(p, 'invalid min_turn/max_turn range')
@@ -101,7 +101,7 @@ function parseEvent(e: unknown, i: number): GameEvent {
   }
   return {
     event_id: str(e, 'event_id', p),
-    act_tier: tier,
+    act_tier: tier as GameEvent['act_tier'],
     min_turn: min,
     max_turn: max,
     image: typeof e.image === 'string' && e.image ? e.image : undefined,

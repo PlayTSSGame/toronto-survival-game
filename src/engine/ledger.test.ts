@@ -11,11 +11,12 @@ const commuter = parseCharacters(charactersRaw).classes.find((c) => c.class_id =
 describe('cash is an additive ledger', () => {
   it('each day: new cash = old cash + choice cash change + one flat stipend', () => {
     let s = beginGame(newGame(commuter, 7), events)
-    for (let i = 0; i < 30 && s.status === 'playing'; i++) {
+    for (let i = 0; i < 60 && s.status === 'playing'; i++) {
       const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)
       if (!ev) break
       const key = canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b'
       const chosen = applyChoice(s, ev, key, commuter, FALLBACK_ENV)
+      if (chosen.status !== 'playing') break
       const days = ev[key].metrics_impact.turns_consumed
       const next = advanceTurn(chosen, events, FALLBACK_ENV)
       expect(next.stats.cash).toBeCloseTo(chosen.stats.cash + days * commuter.daily_stipend, 2)

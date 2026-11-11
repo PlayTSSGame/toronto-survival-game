@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { actForTurn, canChoose, TOTAL_TURNS, timeLabel } from './engine/game'
+import { actForTurn, canChoose, DAYS_PER_ACT, timeLabel, TOTAL_TURNS } from './engine/game'
+import { daysSurvived, loadBest, recordBest } from './engine/highscore'
 import { computeRank, copyText, outcomeTitle, shareText } from './engine/rank'
 import type { CharacterClass, Environment, FeedSource, GameState } from './types'
 import { Avatar, Bolt, Coin, Heart, HeroLife, Skyline } from './ui/Art'
@@ -37,14 +38,17 @@ function TorontoClock() {
 }
 
 /** Each survivor owns a colour that tints their cards. */
-const THEME: Record<Kind, string> = { commuter: '#4CC9F0', intern: '#FFD23F', campus: '#2EE6A6', other: '' }
+const THEME: Record<Kind, string> = { commuter: '#4CC9F0', intern: '#FFD23F', campus: '#2EE6A6', newcomer: '#FF6FB5', courier: '#FF9F43', hustler: '#A78BFA', other: '' }
 const SPARE = ['#FF6FB5', '#FF9F43']
 const themeOf = (id: string, i = 0) => THEME[kindOf(id)] || SPARE[i % SPARE.length]
 
 const ACTS = [
   { name: 'Act 1', note: 'Settling in', color: '#2EE6A6' },
   { name: 'Act 2', note: 'The squeeze', color: '#FFD23F' },
-  { name: 'Act 3', note: 'Survival', color: '#FF3B30' },
+  { name: 'Act 3', note: 'Rock bottom', color: '#FF3B30' },
+  { name: 'Act 4', note: 'Hustle mode', color: '#FF6FB5' },
+  { name: 'Act 5', note: 'Second wind', color: '#4CC9F0' },
+  { name: 'Act 6', note: 'Final stretch', color: '#A78BFA' },
 ]
 
 const money = (n: number) =>
@@ -53,21 +57,16 @@ const signed = (n: number) => (n > 0 ? '+' : n < 0 ? '-' : '') + Math.abs(n)
 const signedMoney = (n: number) => (n > 0 ? '+' : '') + money(n)
 const tone = (n: number) => (n > 0 ? 'up' : n < 0 ? 'down' : 'flat')
 
+/** One bar segment per act, filling as the days pass. */
 function Track({ turn }: { turn: number }) {
+  const endless = turn > TOTAL_TURNS
   return (
-    <ol className="track" aria-label={`Day ${turn} of ${TOTAL_TURNS}`}>
-      {Array.from({ length: TOTAL_TURNS }, (_, i) => {
-        const day = i + 1
-        const act = ACTS[actForTurn(day) - 1]
-        return (
-          <li
-            key={day}
-            className={`dot ${day < turn ? 'done' : day === turn ? 'now' : ''}`}
-            style={{ '--c': act.color } as React.CSSProperties}
-          />
-        )
+    <div className="track" role="progressbar" aria-valuemin={1} aria-valuemax={TOTAL_TURNS} aria-valuenow={Math.min(turn, TOTAL_TURNS)} aria-label={endless ? `Day ${turn}, endless mode` : `Day ${turn} of ${TOTAL_TURNS}`}>
+      {ACTS.map((act, i) => {
+        const fill = Math.max(0, Math.min(1, (turn - i * DAYS_PER_ACT) / DAYS_PER_ACT))
+        return <i key={act.name} className={fill > 0 && fill < 1 ? 'now' : ''} style={{ '--c': act.color, '--f': fill } as React.CSSProperties} />
       })}
-    </ol>
+    </div>
   )
 }
 
@@ -94,7 +93,7 @@ function Chip({ icon, label, text, src, bad }: { icon: React.ReactNode; label: s
 }
 
 function Hud({ state, char, env, place, index }: { state: GameState; char: CharacterClass; env: Environment; place: string; index: number }) {
-  const day = Math.min(state.turn, TOTAL_TURNS)
+  const day = state.turn
   const act = ACTS[actForTurn(state.turn) - 1]
   const { cash, sanity, health } = state.stats
   const theme = themeOf(char.class_id, index)
@@ -132,7 +131,7 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
       </div>
 
       <div className="meta">
-        <span className="act" style={{ background: act.color }}>{act.name} · {act.note}</span>
+        <span className="act" style={{ background: act.color }}>{state.endless ? 'Endless mode' : `${act.name} · ${act.note}`}</span>
         <span className="week">{timeLabel(state.turn)}</span>
         <Track turn={state.turn} />
       </div>
@@ -144,7 +143,10 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
   )
 }
 
-function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) {
+/** Bests are recorded by the effect in App as the run changes; the end screen only reads them. */
+const loadBestNow = () => loadBest()
+
+function EndCard({ state, onReset, onEndless }: { state: GameState; onReset: () => void; onEndless: () => void }) {
   const [msg, setMsg] = useState('')
   const saveImage = async () => {
     try {
@@ -155,6 +157,7 @@ function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) 
     }
   }
   const lost = state.status === 'lost'
+  const best = loadBestNow()
   const share = async () => {
     const text = shareText(state, window.location.origin + window.location.pathname)
     setMsg((await copyText(text)) === 'copied' ? 'Copied! Go brag.' : 'Could not copy. Select and copy this instead:\n' + text)
@@ -168,11 +171,15 @@ function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) 
       <h2 className="rank">{computeRank(state)}</h2>
       <p className="outcome">{outcomeTitle(state)}</p>
       {lost && <p className="reason">{state.lossReason}</p>}
+      {(state.endless || best.days > TOTAL_TURNS) && (
+        <p className="best">Endless record: {Math.max(best.days, daysSurvived(state))} days · peak {money(Math.max(best.cash, state.stats.cash))}</p>
+      )}
       <div className="final">
         <span><Coin size={22} /> {money(state.stats.cash)}</span>
         <span><Bolt size={22} /> {state.stats.sanity}</span>
         <span><Heart size={22} /> {state.stats.health}</span>
       </div>
+      {!lost && !state.endless && <button className="key key-yellow wide" onClick={onEndless}>Keep Surviving (Endless Mode)</button>}
       <button className="key key-red wide" onClick={onReset}>{lost ? 'Try again' : 'Play again'}</button>
       <button className="key key-sky wide" onClick={share}>Copy result</button>
       <button className="key key-mint wide" onClick={saveImage}>Save image</button>
@@ -182,7 +189,7 @@ function EndCard({ state, onReset }: { state: GameState; onReset: () => void }) 
 }
 
 export default function App() {
-  const { error, characters, state, char, event, env, start, choose, next, reset } = useGame()
+  const { error, characters, state, char, event, env, start, choose, next, reset, keepSurviving } = useGame()
   const index = char ? characters.findIndex((c) => c.class_id === char.class_id) : 0
   const [showMap, setShowMap] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -196,6 +203,9 @@ export default function App() {
   const lowVitals = !!state && state.status === 'playing' && (state.stats.sanity <= 20 || state.stats.health <= 20)
 
   useEffect(() => { preloadSfx() }, [])
+
+  // Keep the personal bests (most days, most cash) up to date as the run changes.
+  useEffect(() => { if (state) recordBest(state) }, [state])
 
   // Sound and haptics follow what just happened.
   const lastResult = state?.lastResult
@@ -248,7 +258,7 @@ export default function App() {
                 <span className="w3">Simulator</span>
               </h1>
             </div>
-            <p className="sub">30 days. Rent, rush hour and a -15° wind. Who are you?</p>
+            <p className="sub">60 days. Rent, rush hour and a -15° wind. Who are you?</p>
             <ul className="classes">
               {characters.map((c, i) => (
                 <li key={c.class_id}>
@@ -270,7 +280,7 @@ export default function App() {
           </section>
         )}
 
-        {(state?.status === 'lost' || state?.status === 'finished') && <EndCard state={state} onReset={reset} />}
+        {(state?.status === 'lost' || state?.status === 'finished') && <EndCard state={state} onReset={reset} onEndless={keepSurviving} />}
 
         {state?.status === 'playing' && (
           <section className={`event${state.lastResult && loss ? ' hit' : ''}`} key={`${state.turn}-${state.lastResult ? 'r' : 'q'}`}>
