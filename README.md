@@ -1,6 +1,6 @@
 # Toronto Survival Simulator
 
-Client-side React + Vite + TypeScript game. Thirty fixed turns (days), LocalStorage persistence, static hosting plus one small serverless endpoint for TTC data.
+Client-side React + Vite + TypeScript game. Thirty fixed turns (days), LocalStorage persistence, static hosting plus one small serverless endpoint for TTC data..
 
 ```
 npm install
