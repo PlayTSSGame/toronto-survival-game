@@ -6,6 +6,7 @@ const ROWS: { key: keyof Settings; label: string; hint: string }[] = [
   { key: 'large', label: 'Larger text', hint: 'Scales the whole game up' },
   { key: 'calm', label: 'Calm motion', hint: 'Turns off animations and effects' },
   { key: 'contrast', label: 'High contrast', hint: 'Black panels, white outlines' },
+  { key: 'shockTimer', label: 'Shock countdown', hint: '10-second timer on surprise events' },
 ]
 
 export function SettingsPanel({ settings, onChange, onClose }: { settings: Settings; onChange: (p: Partial<Settings>) => void; onClose: () => void }) {

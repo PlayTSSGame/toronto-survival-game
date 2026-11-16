@@ -1,8 +1,8 @@
 import type { GameState, Stats } from '../types'
 import { STAT_MAX, TOTAL_TURNS } from './game'
 
-export const SAVE_KEY = 'tss.save.v5'
-const VERSION = 5
+export const SAVE_KEY = 'tss.save.v6'
+const VERSION = 6
 
 interface Envelope {
   version: number
@@ -27,7 +27,11 @@ function coherent(s: GameState): boolean {
   const st = s.stats as Stats | undefined
   if (!st || !isNum(st.cash) || !isNum(st.sanity) || !isNum(st.health)) return false
   if (!Number.isInteger(s.turn) || s.turn < 1 || (!s.endless && s.turn > TOTAL_TURNS)) return false
-  if (typeof s.endless !== 'boolean' || !Array.isArray(s.recent)) return false
+  if (typeof s.endless !== 'boolean') return false
+  if (!Array.isArray(s.recentScenarioIds) || s.recentScenarioIds.length > 20 || s.recentScenarioIds.some((i) => typeof i !== 'string')) return false
+  if (!Number.isInteger(s.lastShock) || s.lastShock < 0 || s.lastShock > s.turn) return false
+  if (s.notice !== null && typeof s.notice !== 'string') return false
+  if (s.traits !== null && (typeof s.traits !== 'object' || Array.isArray(s.traits))) return false
   if (typeof s.characterId !== 'string') return false
   if (!isNum(s.stipend) || s.stipend < 0) return false
   if (!Array.isArray(s.inventory) || s.inventory.some((i) => typeof i !== 'string')) return false

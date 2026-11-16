@@ -9,11 +9,22 @@ export interface PassiveModifiers {
   weather_drain_multiplier: number
 }
 
+/** Per-class rules that go beyond the passive multipliers. */
+export interface PassiveTraits {
+  /** Paid on the days whose (turn % 7) is in `weekdays`, e.g. [6, 0] for every 6th and 7th day. */
+  bonus_days?: { weekdays: number[]; cash: number; sanity: number; health: number }
+  /** Multiplies cash won on a lucky coin-flip choice. */
+  risk_cash_multiplier?: number
+  /** Extra sanity lost when a coin-flip choice goes wrong. */
+  failed_risk_sanity?: number
+}
+
 export interface CharacterClass {
   class_id: string
   display_name: string
   starting_stats: Stats
   passive_modifiers: PassiveModifiers
+  passive_traits?: PassiveTraits
   starting_inventory: string[]
   /** Flat cash earned on every completed day (client's daily stipend rule). 0 if not supplied. */
   daily_stipend: number
@@ -35,10 +46,26 @@ export interface MetricsImpact {
   turns_consumed: number
 }
 
+/** One side of a coin flip. */
+export interface Outcome {
+  cash: number
+  sanity: number
+  health: number
+}
+
+/** A high-stakes choice: a seeded coin flip between a jackpot and a setback. */
+export interface Gamble {
+  chance: number
+  win: Outcome
+  lose: Outcome
+}
+
 export interface Choice {
   action_text: string
   metrics_impact: MetricsImpact
   required_inventory_item: string | null
+  /** When set, the outcome is the coin flip below and metrics_impact only supplies turns_consumed. */
+  gamble?: Gamble
 }
 
 export interface ApiDependencies {
@@ -55,6 +82,12 @@ export interface GameEvent {
   location?: string
   /** Optional illustration URL (e.g. /art/blizzard.png). Replaces the drawn scene. */
   image?: string
+  /** Only these classes can draw this event. Omitted means every class. */
+  class_ids?: string[]
+  /** Curveball that appears every 4-5 days on its own schedule, with a countdown. */
+  shock?: boolean
+  /** Choice taken automatically when the shock countdown runs out. Defaults to choice_b. */
+  timeout_choice?: 'choice_a' | 'choice_b'
   scenario_text: string
   api_dependencies: ApiDependencies
   choice_a: Choice
@@ -89,6 +122,8 @@ export interface LastResult {
   eventId: string
   choiceKey: 'choice_a' | 'choice_b'
   delta: Stats
+  /** Set for coin-flip choices: how the flip landed. */
+  flip?: 'win' | 'lose'
 }
 
 export interface GameState {
@@ -110,6 +145,12 @@ export interface GameState {
   victory: Victory | null
   /** True once the player chose "Keep Surviving" after day 60: no day cap, events recycle. */
   endless: boolean
-  /** Most recently drawn event ids (oldest first), used to avoid repeats once the pool runs dry. */
-  recent: string[]
+  /** The last 20 scenario ids played (oldest first): none of them can come back within 20 days. */
+  recentScenarioIds: string[]
+  /** Day the last shock event was drawn (0 = none yet). Drives the 4-5 day shock schedule. */
+  lastShock: number
+  /** One-line message about what happened overnight (rent, promoter payday), shown on the next day. */
+  notice: string | null
+  /** Copied from the character at game start (the engine's day-by-day rules need it without the class). */
+  traits: PassiveTraits | null
 }

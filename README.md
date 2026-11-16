@@ -19,10 +19,11 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 | `VITE_SPONSOR_URL` | Footer "Sponsor this game" link | `https://google.com` |
 | `VITE_REPORT_EMAIL` | Footer "Report issue" mailto address | `playtssgame@gmail.com` |
 | `VITE_TRANSIT_URL` | Override the TTC endpoint (optional) | same-origin `/api/transit` |
+| `STATS_PASSWORD` | Password for the private `/stats` page (set in Netlify only, not a `VITE_` value) | none: `/stats` shows a setup message |
 
 ## Layout
 - `src/engine/` pure game logic, no UI imports: `validate` (content parsing), `game` (turn engine, endings), `environment` (weather/TTC modifiers), `live` (feed fetching and caching), `persistence`, `rank` (ranks and share text), `rng`
-- `src/data/` `characters.json` and `events.json`, the client's content (33 events and 6 classes)
+- `src/data/` `characters.json` and `events.json`, the client's content (61 events and 8 classes), `sponsors.json` (paid sponsors for the scrolling banner)
 - `src/ui/` React hook (`useGame`), art, effects, settings, sound, share image
 - `src/App.tsx` the single-page view; `src/App.css` styles
 - `server/transit.ts` TTC proxy logic, exposed by `netlify/functions/transit.ts` (Netlify) and `api/transit.ts` (Vercel)
@@ -30,7 +31,12 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 - `scripts/balance.check.ts` the balance report
 
 ## How a run works
-- 60 days in 6 acts of 10 days. Each day draws one event whose `min_turn`-`max_turn` window covers the day, preferring events not yet seen (seeded, so a save replays the same way). Once every eligible event has been seen, the pool recycles and skips the last 5 drawn, so there are no quiet days. A day with no covering event is the only quiet day.
+- 60 days in 6 acts of 10 days. Each day draws one event that has unlocked (`min_turn`). **No scenario repeats within 20 plays** (`recentScenarioIds` on the game state). Events not yet seen come first; the cooldown only relaxes (to 5) if too few events are eligible. Class-specific scenarios (`class_ids`) are drawn 60% of the time while one is off cooldown, otherwise a general one. Everything is seeded, so a save replays the same way.
+- **Shock events** (`"shock": true`) replace the normal draw every 4 or 5 days, starting day 4. They show a 10-second countdown; when it runs out the `timeout_choice` (default choice B) is taken. Players can turn the countdown off in Settings.
+- **Coin-flip choices** (`gamble`): a 50/50 flip between a win and a lose outcome, seeded by run, day and scenario so reloading cannot re-roll it. Every class meets some; the Luxury Dater's trait changes their payouts.
+- **Rent** is charged at the end of day 15 ($350), 30 ($400), 45 ($450), 60 ($450) and every 15th day in endless mode ($450), after the daily stipend. The HUD shows the next bill.
+- **Escalation:** days 21-40 hit sanity/health choices 25% harder, days 41-60 hit cash costs 30% harder (that rate carries into endless mode), and every 10 endless days add 10% to both. Coin flips pay their listed numbers and are not scaled.
+- Cash, sanity or health below 25 pulses red.
 - **Endless mode:** after surviving day 60 the win screen offers "Keep Surviving (Endless Mode)". The run continues with no day cap (act 6 events keep recycling) until sanity or health hits 0. Best days survived and peak cash are kept in the browser (`tss.best.v1`) and shown on the end screen.
 - Each event has two choices. A choice can cost more than one day (`turns_consumed`) and can require an inventory item, which is consumed when used.
 - Negative sanity/health changes on events that depend on TTC and/or weather are multiplied by the class modifier and the live modifier. Cash is uncapped and may go negative; sanity and health stay within 0-100.
@@ -49,7 +55,10 @@ Copy `.env.example` to `.env`. Only public values belong in `VITE_*` variables; 
 | Downtown Gig & Uber Courier | $60 / 60 / 75 | $45 | Courier Bag, Meal Plan Voucher | none |
 | North York Startup Hustler | $180 / 55 / 80 | $50 | Pitch Deck, Meal Plan Voucher | none |
 
-The first three are the client's original classes. The last three have starting stats and stipends from the client; their items, home locations and (neutral) modifiers are our defaults.
+| King West Nightlife Promoter | $120 / 65 / 70 | $45 | VIP Guestlist Clipboard, Double Espresso Shot | every 6th and 7th day: +$65, -10 sanity, -8 health |
+| High-Stakes Luxury Dater & Side-Hustler | $180 / 60 / 75 | $35 | Designer Clutch, Limited-Edition Sneaker Pass | coin-flip cash wins x1.5; a failed flip costs an extra 15 sanity |
+
+The first three are the client's original classes. Classes 4-6 have starting stats and stipends from the client; their items, home locations and (neutral) modifiers are our defaults. Classes 7 and 8 have stats, bags and traits from the client (v1.2); their stipends, home locations and neutral modifiers are ours. Neither bag has a Meal Plan Voucher, so they cannot take that choice.
 
 Two choices need items: Midterm Crunch (A) needs a Surge Espresso (only the Intern starts with one) and a Meal Plan Voucher choice needs a voucher (every class starts with one).
 
@@ -74,14 +83,16 @@ The end screen offers "Copy result" (clipboard API, with a textarea fallback and
 ## UI behaviour
 - The root wrapper has 2.5rem of bottom padding on top of the device safe area (folding devices).
 - During a run, the browser back button or swipe-back returns to the menu (one history entry is pushed per run; `popstate` resets the run). "Quit run" does the same.
-- Settings (sound, vibration, large text, calm motion, high contrast) are stored in LocalStorage and default calm motion from `prefers-reduced-motion`.
+- A scrolling sponsor banner sits at the top of every screen. It shows the placeholder line until `src/data/sponsors.json` has entries (`name`, `text`, optional `url`); it pauses on hover and stands still with Calm motion or reduced motion.
+- Settings (sound, vibration, large text, calm motion, high contrast, shock countdown) are stored in LocalStorage and default calm motion from `prefers-reduced-motion`.
 
 ## Deploying
 1. `npm ci && npm test && npm run build` produces `dist/`.
 2. **Netlify:** connect the GitHub repo. `netlify.toml` sets build command `npm run build`, publish directory `dist`, and a `/* -> /index.html` rewrite (status 200) for the SPA. `netlify/functions/transit.ts` serves `/api/transit` through its own path config. Set `VITE_SPONSOR_URL` and `VITE_REPORT_EMAIL` (and optionally `VITE_TRANSIT_URL`) in the site's environment variables before the first build. If the build needs a newer Node, set `NODE_VERSION` to 20 or later.
 3. **Vercel:** import the repo (Vite preset). `vercel.json` rewrites everything except `/api/*` to the SPA, and `api/transit.ts` becomes `/api/transit`.
 4. After deploying, open `/api/transit` (it should return JSON, not the game page) and refresh on a deep link to confirm the fallback works.
-5. Offline: `public/sw.js` caches the app shell after the first visit. It skips `/api/` and cross-origin requests.
+5. Offline: `public/sw.js` caches the app shell after the first visit. It skips `/api/`, `/stats` and cross-origin requests.
+6. **Live stats:** `netlify/functions/track.ts` (`POST /api/track`) stores anonymous daily counters in Netlify Blobs: visits (one per browser session), runs started by class, finishes and wins, endless entries and sponsor clicks, each tagged with the visitor's `?ref=` code (kept from the first visit; `a-z`, `0-9`, `-`, `_`, up to 32 characters). No cookies, IPs or personal data. Set `STATS_PASSWORD` in Netlify (use 16+ characters) and redeploy, then open **`https://<your-site>/stats`**: a one-field password page (no username) sets a 30-day login cookie. Add `?days=7` for a range or `?format=json` for raw data. Campus creators get links like `https://playtss.com/?ref=tmu-jane`. Under `npm run dev` / `npm run preview` the same endpoints run in memory (password `local`, or `STATS_PASSWORD`; counting under `dev` needs `VITE_TRACK_IN_DEV=1`).
 
 ## Swapping in client content
 Replace `src/data/characters.json` and `src/data/events.json` (same schema; `home_location` and `location` are optional extras we added for the map). Content is validated at startup with field-level error messages. Run `npm test`, which checks the event counts and plays each character through 60 days. Saves for a removed class are discarded automatically. If the content changes, also run `npm run balance`.
@@ -90,8 +101,9 @@ Replace `src/data/characters.json` and `src/data/events.json` (same schema; `hom
 `npm run balance` runs an automated report (about 10 seconds) over the real content. For each class it searches choice sequences on 12 different games (bounded by `NODES`, since 60 days is too many paths to list), plays 500 simulated games as a random, a careful and a cash-first player, lists choices locked by missing items, and shows which victories are reachable and the most cash ever held. Options: `SEEDS=24 GAMES=2000 NODES=200000 ENV=bad STRICT=1 npm run balance` (`ENV=bad` is a 45 minute TTC delay and -20 degrees C; `STRICT=1` exits with an error if any class cannot win).
 
 ## Known limits
-- **Wealth and condo wins are unreachable** at the current stipends. Peak cash seen in the balance report is about $1,800 (Hustler) against a $10,000 target, so endurance (surviving day 60) is the only ending players actually get. The wealth and asset paths stay wired for a future income/asset-trading update.
-- **60 days is much harder than 30.** A bounded search finds a surviving path for every class, but a careful player wins only roughly 3-30% of games and a random player 0-10% (Commuter, Campus and Newcomer are the hardest). The 18 added events are net-negative by design, so the original 30-day difficulty did not carry over. Retune stipends or recovery events if easier runs are wanted.
+- **Wealth and condo wins are unreachable** at the current stipends. Peak cash seen in the balance report is about $5,000 (Luxury Dater) and under $2,500 for most classes, against a $10,000 target, so endurance (surviving day 60) is the only ending players actually get. The wealth and asset paths stay wired for a future income/asset-trading update.
+- **Difficulty (balance report, 3 seeds x 400 games):** a careful player (always takes the best sanity + health) wins roughly 10% (Promoter), 13% (Commuter), 29% (Newcomer), 48% (Courier), 62% (Intern), 69% (Hustler), 80% (Campus) and 93% (Dater) of runs. A random player wins about 0-19%. Real players cannot see the numbers before choosing, so real win rates are lower than the careful figures. The Commuter, Newcomer and especially the Promoter are very hard; the Dater is easy because its own scenarios mostly restore sanity/health. Rent, the +25%/+30% escalation, shock events and the Promoter's payday costs are what make 60 days hard. A bounded search finds a surviving path for every class, so all can win. Easing it means adding recovery scenarios or raising stipends; none have been added beyond the client's lists (the stipends for classes 7-8 are ours).
+- The analytics counters on Netlify Blobs are approximate under heavy bursts (each day is split over 4 shards with retries). Anyone could send fake hits to `/api/track`; the numbers are for guidance, not billing.
 - Only the Intern can take Midterm Crunch choice A (needs a Surge Espresso). The other choice is always available.
 - `BASE_DAILY_DRAIN` is 0 until the client supplies a base cost.
 - Rank names beyond the three from the client's spec are unconfirmed.

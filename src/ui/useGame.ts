@@ -5,6 +5,7 @@ import { advanceTurn, applyChoice, beginGame, continueEndless, FALLBACK_ENV, new
 import { fetchEnvironment } from '../engine/live'
 import { clearSave, loadGame, saveGame } from '../engine/persistence'
 import { parseCharacters, parseEvents } from '../engine/validate'
+import { publishDev } from './devBridge'
 import type { CharactersFile, Environment, EventsFile, GameState } from '../types'
 
 interface Content { characters: CharactersFile; events: EventsFile }
@@ -24,6 +25,9 @@ export function useGame() {
   useEffect(() => {
     if (state) saveGame(state)
   }, [state])
+
+  // Dev-only: the test panel (npm run dev) can read and replace the state.
+  useEffect(() => { publishDev({ state, setState }) }, [state])
 
   // Refresh weather/TTC in the background on load and whenever a new day's event appears.
   // Play never waits on it: choices use the latest snapshot (or the offline fallback).

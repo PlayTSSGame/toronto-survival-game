@@ -24,8 +24,8 @@ function memStorage(): Storage {
 
 describe('validation', () => {
   it('accepts the bundled content', () => {
-    expect(chars).toHaveLength(6)
-    expect(events.events_catalog).toHaveLength(33)
+    expect(chars).toHaveLength(8)
+    expect(events.events_catalog).toHaveLength(61)
     expect(events.events_catalog.length).toBeGreaterThan(0)
   })
   it('rejects malformed events with a path', () => {
@@ -50,11 +50,17 @@ describe('characters.json as delivered', () => {
     expect(chars[0].starting_inventory).toEqual(['Presto Card', 'Meal Plan Voucher'])
     expect(chars[1].starting_inventory).toEqual(['Corporate Lanyard', 'Surge Espresso', 'Meal Plan Voucher'])
     expect(chars[2].starting_inventory).toEqual(['Meal Plan Voucher'])
-    expect(chars.slice(3).map((c) => c.starting_stats)).toEqual([
+    expect(chars.slice(3, 6).map((c) => c.starting_stats)).toEqual([
       { cash: 120, sanity: 70, health: 85 }, { cash: 60, sanity: 60, health: 75 }, { cash: 180, sanity: 55, health: 80 }])
-    expect(chars.slice(3).map((c) => c.display_name)).toEqual([
+    expect(chars.slice(3, 6).map((c) => c.display_name)).toEqual([
       'The Newcomer / International Student', 'The Downtown Gig & Uber Courier', 'The North York Startup Hustler'])
-    expect(chars.map((c) => c.daily_stipend)).toEqual([35, 65, 15, 25, 45, 50])
+    expect(chars.slice(6).map((c) => c.starting_stats)).toEqual([
+      { cash: 120, sanity: 65, health: 70 }, { cash: 180, sanity: 60, health: 75 }])
+    expect(chars[6].starting_inventory).toEqual(['VIP Guestlist Clipboard', 'Double Espresso Shot'])
+    expect(chars[7].starting_inventory).toEqual(['Designer Clutch', 'Limited-Edition Sneaker Pass'])
+    expect(chars[6].passive_traits?.bonus_days).toEqual({ weekdays: [6, 0], cash: 65, sanity: -10, health: -8 })
+    expect(chars[7].passive_traits).toEqual({ risk_cash_multiplier: 1.5, failed_risk_sanity: 15 })
+    expect(chars.map((c) => c.daily_stipend)).toEqual([35, 65, 15, 25, 45, 50, 45, 35])
     expect(chars.slice(0, 3).map((c) => c.passive_modifiers.ttc_delay_multiplier)).toEqual([1.25, 1, 0.5])
     expect(chars.slice(0, 3).map((c) => c.passive_modifiers.weather_drain_multiplier)).toEqual([1, 1.15, 0.75])
   })
@@ -79,9 +85,9 @@ describe('turn engine', () => {
     }
     // Everything seen: the pool recycles instead of going quiet, skipping what was drawn lately.
     const seenAll = events.events_catalog.map((e) => e.event_id)
-    const again = pickEvent({ ...s, turn: 25, processedEvents: seenAll, recent: seenAll.slice(-5) }, events)!
+    const again = pickEvent({ ...s, turn: 25, processedEvents: seenAll, recentScenarioIds: seenAll.slice(-20), lastShock: 24 }, events)!
     expect(again).toBeTruthy()
-    expect(seenAll.slice(-5)).not.toContain(again.event_id)
+    expect(seenAll.slice(-20)).not.toContain(again.event_id)
     // Only a day no event covers is quiet.
     expect(pickEvent({ ...s, turn: 25 }, { ...events, events_catalog: [] })).toBeNull()
   })
@@ -159,13 +165,13 @@ describe('persistence', () => {
     st.setItem(SAVE_KEY, '{nope')
     expect(loadGame(st)).toBeNull()
     const bad = { ...s, stats: { ...s.stats, cash: NaN } }
-    st.setItem(SAVE_KEY, JSON.stringify({ version: 5, state: bad, checksum: checksum(bad) }))
+    st.setItem(SAVE_KEY, JSON.stringify({ version: 6, state: bad, checksum: checksum(bad) }))
     expect(loadGame(st)).toBeNull()
   })
   it('rejects saves whose win/loss state contradicts the vitals or turn', () => {
     const st = memStorage()
     const s = newGame(commuter, 5)
-    const put = (o: object) => { const x = { ...s, ...o } as typeof s; st.setItem(SAVE_KEY, JSON.stringify({ version: 5, state: x, checksum: checksum(x) })); return loadGame(st) }
+    const put = (o: object) => { const x = { ...s, ...o } as typeof s; st.setItem(SAVE_KEY, JSON.stringify({ version: 6, state: x, checksum: checksum(x) })); return loadGame(st) }
     expect(put({})).not.toBeNull()
     expect(put({ status: 'lost' })).toBeNull() // lost with live vitals
     expect(put({ status: 'finished', victory: 'wealth' })).toBeNull() // finished before day 60
@@ -220,27 +226,22 @@ describe('frozen client rules', () => {
     expect(s.inventory).not.toContain('Surge Espresso')
     expect(s.inventory).toContain('Corporate Lanyard')
   })
-  it('plays each event once before any repeat, and finishes after day 60', () => {
-    let s = beginGame(newGame(commuter, 9), events)
-    const seen = new Set<string>()
-    let repeated = false
-    for (let i = 0; i < TOTAL_TURNS && s.status === 'playing'; i++) {
-      const ev = events.events_catalog.find((e) => e.event_id === s.currentEventId)
-      if (ev) {
-        // A repeat is only allowed once every event that can appear today has already been seen.
-        if (seen.has(ev.event_id)) {
-          repeated = true
-          const fresh = events.events_catalog.filter((e) => e.min_turn <= s.turn && s.turn <= e.max_turn && !seen.has(e.event_id))
-          expect(fresh).toHaveLength(0)
+  it('never repeats a scenario within 20 days, and finishes after day 60', () => {
+    for (const c of [chars[0], chars[6], chars[7]]) {
+      let s = beginGame(newGame(c, 9), events)
+      const plays: string[] = []
+      for (let i = 0; i < TOTAL_TURNS && s.status === 'playing'; i++) {
+        const ev = events.events_catalog.find((x) => x.event_id === s.currentEventId)
+        if (ev) {
+          expect(plays.slice(-20)).not.toContain(ev.event_id)
+          plays.push(ev.event_id)
+          s = applyChoice({ ...s, stats: { cash: 5000, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', c)
         }
-        seen.add(ev.event_id)
-        s = applyChoice({ ...s, stats: { cash: 500, sanity: 100, health: 100 } }, ev, canChoose(s, ev.choice_a) ? 'choice_a' : 'choice_b', commuter)
+        s = advanceTurn({ ...s, stats: { cash: 5000, sanity: 100, health: 100 } }, events)
       }
-      s = advanceTurn(s, events)
+      expect(s.status).toBe('finished')
+      expect(s.turn).toBe(60)
     }
-    expect(repeated || seen.size > 0).toBe(true)
-    expect(s.status).toBe('finished')
-    expect(s.turn).toBe(60)
   })
   it('has an event every day for 60 days (no quiet days)', () => {
     let s = beginGame(newGame(commuter, 4), events)
@@ -294,7 +295,7 @@ describe('endless mode', () => {
 describe('new content', () => {
   const ids = (n: number) => events.events_catalog.filter((e) => e.act_tier === n).map((e) => e.event_id)
   it('adds the 18 events, 3 for each of the six acts', () => {
-    const added = events.events_catalog.filter((e) => Number(e.event_id.split('_')[2]) >= 16)
+    const added = events.events_catalog.filter((e) => e.event_id.startsWith('TSS_ACT') && Number(e.event_id.split('_')[2]) >= 16)
     expect(added).toHaveLength(18)
     for (let act = 1; act <= 6; act++) expect(added.filter((e) => e.act_tier === act)).toHaveLength(3)
     expect(ids(6).length).toBeGreaterThan(0)

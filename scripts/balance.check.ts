@@ -71,8 +71,12 @@ function simulate(c: CharacterClass, strategy: 'random' | 'careful' | 'rich') {
       if (ev) {
         const opts = KEYS.filter((k) => canChoose(s, ev[k]))
         r = (r * 1103515245 + 12345) % 2147483648
-        const score = (k: (typeof KEYS)[number]) => ev[k].metrics_impact.sanity_modifier + ev[k].metrics_impact.health_modifier
-        const cash = (k: (typeof KEYS)[number]) => ev[k].metrics_impact.cash_modifier
+        const ev1 = (k: (typeof KEYS)[number]) => {
+          const g = ev[k].gamble
+          return g ? { sanity: g.chance * g.win.sanity + (1 - g.chance) * g.lose.sanity, health: g.chance * g.win.health + (1 - g.chance) * g.lose.health, cash: g.chance * g.win.cash + (1 - g.chance) * g.lose.cash } : { sanity: ev[k].metrics_impact.sanity_modifier, health: ev[k].metrics_impact.health_modifier, cash: ev[k].metrics_impact.cash_modifier }
+        }
+        const score = (k: (typeof KEYS)[number]) => ev1(k).sanity + ev1(k).health
+        const cash = (k: (typeof KEYS)[number]) => ev1(k).cash
         const pick = strategy === 'random' ? opts[r % opts.length] : [...opts].sort((a, b) => (strategy === 'rich' ? cash(b) - cash(a) : score(b) - score(a)))[0]
         s = applyChoice(s, ev, pick, c, env)
       }

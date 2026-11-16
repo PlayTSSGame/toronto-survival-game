@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import charactersRaw from '../data/characters.json'
 import eventsRaw from '../data/events.json'
-import { advanceTurn, applyChoice, beginGame, canChoose, newGame } from './game'
+import { advanceTurn, applyChoice, beginGame, canChoose, newGame, rentForDay } from './game'
 import { FALLBACK_ENV } from './environment'
 import { parseCharacters, parseEvents } from './validate'
 
@@ -19,7 +19,9 @@ describe('cash is an additive ledger', () => {
       if (chosen.status !== 'playing') break
       const days = ev[key].metrics_impact.turns_consumed
       const next = advanceTurn(chosen, events, FALLBACK_ENV)
-      expect(next.stats.cash).toBeCloseTo(chosen.stats.cash + days * commuter.daily_stipend, 2)
+      let rent = 0
+      for (let d = 0; d < days; d++) rent += rentForDay(s.turn + d)
+      expect(next.stats.cash).toBeCloseTo(chosen.stats.cash + days * commuter.daily_stipend - rent, 2)
       s = next
     }
   })

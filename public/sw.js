@@ -1,6 +1,7 @@
 // Offline app shell: stale-while-revalidate for same-origin GETs, cached index.html for navigations.
 // Weather/TTC calls are cross-origin or /api/ and are never cached here (the game caches them itself).
-const CACHE = 'tss-shell-v1'
+// /stats is the owners' private stats page: never cached, and never stored as the app shell.
+const CACHE = 'tss-shell-v2'
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add('/index.html')).then(() => self.skipWaiting()))
@@ -17,7 +18,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request
   const url = new URL(req.url)
-  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return
+  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname === '/stats') return
 
   if (req.mode === 'navigate') {
     e.respondWith(

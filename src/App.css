@@ -267,3 +267,43 @@ html.contrast .who span, html.contrast .desc, html.contrast .week, html.contrast
 html.contrast .track i { background: #8A8AA0; } html.contrast .segs i { background: #6A6A80; }
 html.contrast .key { border-color: #fff; }
 .stat small.pay { color: #2EE6A6; letter-spacing: .04em; }
+
+/* ---- v1.2: ticker, shock events, coin flips, rent, danger zone ---- */
+.ticker { overflow: hidden; margin: 8px 0 0; border-radius: 12px; border: 2px solid var(--ink); background: #1F1F2B; box-shadow: 0 3px 0 #0008; color: #FFD23F; font-weight: 900; font-size: 13px; letter-spacing: .02em; }
+.ticker-track { display: flex; width: max-content; animation: ticker 38s linear infinite; }
+.ticker:hover .ticker-track, .ticker:focus-within .ticker-track { animation-play-state: paused; }
+.ticker-lane { display: flex; flex: none; margin: 0; padding: 0; list-style: none; }
+.ticker-lane li { flex: none; padding: 6px 28px 6px 0; white-space: nowrap; }
+.ticker-lane li::after { content: '•'; margin-left: 28px; color: #FF6FB5; }
+.ticker-lane a { color: inherit; text-decoration: none; } .ticker-lane a:hover { text-decoration: underline; }
+.ticker-lane b { color: #fff; }
+@keyframes ticker { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+html.calm .ticker { overflow-x: auto; }
+html.contrast .ticker { background: #000; border-color: #fff; }
+
+.rent { padding: 3px 10px; border-radius: 99px; background: #2A2A3A; color: #B9B9CC; font-size: 12px; font-weight: 900; }
+.rent.soon { background: #4A3A00; color: var(--yellow); box-shadow: inset 0 0 0 2px var(--yellow); }
+.overnight { margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; background: #2A2A3A; border-left: 5px solid var(--yellow); font-size: 14px; font-weight: 800; }
+
+.app .card.shock, .app[data-act] .card.shock { border-color: var(--red); box-shadow: 6px 6px 0 var(--red); }
+.shock-tag { position: absolute; z-index: 2; top: 10px; right: 10px; margin: 0; padding: 3px 10px; border-radius: 99px; background: var(--red); color: #fff; font-family: var(--display); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; animation: pulse-tag 1s ease-in-out infinite; }
+@keyframes pulse-tag { 50% { transform: scale(1.08); } }
+.shock-timer { position: relative; height: 26px; border-radius: 99px; background: #3C3C52; border: 3px solid var(--ink); overflow: hidden; margin-bottom: 10px; }
+.shock-timer i { position: absolute; inset: 0 auto 0 0; background: var(--yellow); transition: width .1s linear; }
+.shock-timer.hot i { background: var(--red); }
+.shock-timer b { position: relative; display: block; text-align: center; line-height: 20px; font-family: var(--display); font-weight: 400; color: var(--ink); mix-blend-mode: normal; text-shadow: 0 0 4px #fff8; }
+.shock-note { margin: 0 0 8px; font-size: 12px; color: #B9B9CC; }
+
+.choice.risky { outline: 3px dashed var(--red); outline-offset: 2px; }
+.stakes { font-style: normal; font-family: var(--display); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--red); }
+.key-yellow .stakes, .key-mint .stakes { color: #B01E14; }
+.ctext .odds { display: flex; flex-direction: column; gap: 2px; text-transform: none; letter-spacing: 0; opacity: 1; font-size: 12px; }
+.flip { margin: 0; text-align: center; font-family: var(--display); font-size: 20px; }
+.flip.win { color: var(--mint); } .flip.lose { color: var(--red); }
+
+/* Danger zone: cash, sanity or health below 25 */
+.stat.danger { box-shadow: inset 0 0 0 2px var(--red); animation: danger-pulse 1s ease-in-out infinite; }
+.stat.neg { animation: danger-pulse 1s ease-in-out infinite; }
+@keyframes danger-pulse { 50% { background: #4A1B1B; } }
+.stat.jitter, .stat.beat { box-shadow: inset 0 0 0 2px var(--red); animation: danger-pulse 1s ease-in-out infinite; }

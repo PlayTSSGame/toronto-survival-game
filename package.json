@@ -12,6 +12,7 @@
     "balance": "vitest run --config vitest.balance.config.ts"
   },
   "dependencies": {
+    "@netlify/blobs": "^11.1.9",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

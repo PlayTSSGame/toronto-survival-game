@@ -41,9 +41,10 @@ describe('catalog', () => {
     const meal = events.events_catalog.find((e) => e.event_id === 'TSS_ACT3_014_MEAL_PLAN_END')!.choice_a.metrics_impact
     expect(meal).toMatchObject({ sanity_modifier: 45, health_modifier: 50 })
   })
-  it('keeps the original 15 events and adds 18 more', () => {
-    expect(events.events_catalog).toHaveLength(33)
-    for (const act of [1, 2, 3]) expect(events.events_catalog.filter((e) => e.act_tier === act && Number(e.event_id.split('_')[2]) <= 15)).toHaveLength(5)
+  it('keeps the original 15 events and the 18 client events, plus the v1.2 content', () => {
+    expect(events.events_catalog.filter((e) => e.event_id.startsWith('TSS_ACT'))).toHaveLength(33)
+    expect(events.events_catalog).toHaveLength(61)
+    for (const act of [1, 2, 3]) expect(events.events_catalog.filter((e) => e.event_id.startsWith('TSS_ACT') && e.act_tier === act && Number(e.event_id.split('_')[2]) <= 15)).toHaveLength(5)
   })
 })
 
@@ -51,8 +52,9 @@ describe('victory conditions', () => {
   const rich = { cash: 15000, sanity: 50, health: 50 }
   it('wealth needs cash, turn >= 50 and most events seen', () => {
     expect(evaluateVictory(at60({ stats: rich }), events, FALLBACK_ENV)).toBe('wealth')
-    expect(evaluateVictory(at60({ stats: rich, processedEvents: all.slice(0, 26) }), events, FALLBACK_ENV)).not.toBe('wealth') // 26 of 33 seen is under 80%
-    expect(evaluateVictory(at60({ stats: rich, processedEvents: all.slice(0, 27) }), events, FALLBACK_ENV)).toBe('wealth')
+    const need = Math.ceil(all.length * 0.8)
+    expect(evaluateVictory(at60({ stats: rich, processedEvents: all.slice(0, need - 1) }), events, FALLBACK_ENV)).not.toBe('wealth') // under 80% seen
+    expect(evaluateVictory(at60({ stats: rich, processedEvents: all.slice(0, need) }), events, FALLBACK_ENV)).toBe('wealth')
     expect(evaluateVictory(at60({ stats: rich, turn: 49 }), events, FALLBACK_ENV)).not.toBe('wealth')
     expect(evaluateVictory(at60({ stats: { ...rich, cash: 9999 } }), events, FALLBACK_ENV)).toBe('endurance')
   })
@@ -99,10 +101,10 @@ describe('daily stipend', () => {
     expect(n.stats.sanity).toBe(50) // no overdraft penalty
   })
   it('pays on day 60 before victory is evaluated', () => {
-    const s = { ...base, turn: 60, processedEvents: all, stats: { cash: 9700, sanity: 50, health: 50 } }
+    const s = { ...base, turn: 60, processedEvents: all, stats: { cash: 10100, sanity: 50, health: 50 } }
     const n = advanceTurn(s, events)
     expect(n.status).toBe('finished')
-    expect(n.stats.cash).toBe(10050)
+    expect(n.stats.cash).toBe(10000) // 10100 + 350 stipend - 450 rent
     expect(n.victory).toBe('wealth')
   })
   it('does nothing when the character has no stipend', () => {

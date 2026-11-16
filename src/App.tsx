@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { actForTurn, canChoose, DAYS_PER_ACT, timeLabel, TOTAL_TURNS } from './engine/game'
+import { actForTurn, canChoose, DAYS_PER_ACT, RENT_EVERY, rentForDay, timeLabel, TOTAL_TURNS } from './engine/game'
 import { daysSurvived, loadBest, recordBest } from './engine/highscore'
 import { computeRank, copyText, outcomeTitle, shareText } from './engine/rank'
-import type { CharacterClass, Environment, FeedSource, GameState } from './types'
+import { track, trackVisit } from './analytics'
+import type { CharacterClass, Environment, FeedSource, Gamble, GameState, PassiveTraits } from './types'
 import { Avatar, Bolt, Coin, Heart, HeroLife, Skyline } from './ui/Art'
 import { Count } from './ui/Count'
 import { Doors } from './ui/Doors'
@@ -17,9 +18,14 @@ import { CityMap } from './ui/CityMap'
 import { Backdrop, Burst, Confetti, Sky } from './ui/Fx'
 import { ItemIcon } from './ui/Items'
 import { Scene } from './ui/Scenes'
+import { SponsorTicker } from './ui/Ticker'
 import { TrainIcon, WeatherIcon } from './ui/Weather'
 import { useGame } from './ui/useGame'
+import { lazy, Suspense } from 'react'
 import './App.css'
+
+// The test panel is only compiled in for `npm run dev`; production builds drop it entirely.
+const DevPanel = import.meta.env.DEV ? lazy(() => import('./ui/DevPanel')) : null
 
 const SPONSOR_URL = import.meta.env.VITE_SPONSOR_URL || 'https://google.com'
 const REPORT_URL = `mailto:${import.meta.env.VITE_REPORT_EMAIL || 'playtssgame@gmail.com'}`
@@ -38,7 +44,7 @@ function TorontoClock() {
 }
 
 /** Each survivor owns a colour that tints their cards. */
-const THEME: Record<Kind, string> = { commuter: '#4CC9F0', intern: '#FFD23F', campus: '#2EE6A6', newcomer: '#FF6FB5', courier: '#FF9F43', hustler: '#A78BFA', other: '' }
+const THEME: Record<Kind, string> = { commuter: '#4CC9F0', intern: '#FFD23F', campus: '#2EE6A6', newcomer: '#FF6FB5', courier: '#FF9F43', hustler: '#A78BFA', promoter: '#B8F34A', dater: '#FF5E7E', other: '' }
 const SPARE = ['#FF6FB5', '#FF9F43']
 const themeOf = (id: string, i = 0) => THEME[kindOf(id)] || SPARE[i % SPARE.length]
 
@@ -55,7 +61,20 @@ const money = (n: number) =>
   `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-CA', { maximumFractionDigits: 2 })}`
 const signed = (n: number) => (n > 0 ? '+' : n < 0 ? '-' : '') + Math.abs(n)
 const signedMoney = (n: number) => (n > 0 ? '+' : '') + money(n)
+/** Cash, sanity or health below this pulses red. */
+const DANGER = 25
 const tone = (n: number) => (n > 0 ? 'up' : n < 0 ? 'down' : 'flat')
+
+/** Shows the next rent bill and how far away it is. */
+function RentTag({ turn }: { turn: number }) {
+  const due = Math.ceil(turn / RENT_EVERY) * RENT_EVERY
+  const left = due - turn
+  return (
+    <span className={`rent${left <= 2 ? ' soon' : ''}`} title="Rent is charged on every 15th day">
+      Rent {money(rentForDay(due))} {left === 0 ? 'tonight' : left === 1 ? 'tomorrow' : `in ${left} days`}
+    </span>
+  )
+}
 
 /** One bar segment per act, filling as the days pass. */
 function Track({ turn }: { turn: number }) {
@@ -74,9 +93,9 @@ function Track({ turn }: { turn: number }) {
 function Segs({ value, color }: { value: number; color: string }) {
   const filled = Math.ceil(Math.max(0, Math.min(100, value)) / 10)
   return (
-    <div className={`segs${value <= 30 ? ' low' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value}>
+    <div className={`segs${value < DANGER ? ' low' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value}>
       {Array.from({ length: 10 }, (_, i) => (
-        <i key={i} style={i < filled ? { background: value <= 30 ? '#FF3B30' : color } : undefined} />
+        <i key={i} style={i < filled ? { background: value < DANGER ? '#FF3B30' : color } : undefined} />
       ))}
     </div>
   )
@@ -113,18 +132,18 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
       </div>
 
       <div className="stats">
-        <div className={`stat cash${cash < 0 ? ' neg' : ''}`}>
+        <div className={`stat cash${cash < 0 ? ' neg' : cash < DANGER ? ' danger' : ''}`}>
           <Coin size={26} />
           <div>
             <b><Count value={cash} format={money} /></b>
             {cash < 0 ? <small>OVERDRAFT</small> : state.stipend > 0 && <small className="pay">+{money(state.stipend)}/day</small>}
           </div>
         </div>
-        <div className={`stat${sanity <= 20 ? ' jitter' : ''}`}>
+        <div className={`stat${sanity < DANGER ? ' jitter' : ''}`}>
           <Bolt size={26} />
           <div><b><Count value={sanity} format={(n) => String(Math.round(n))} /></b><Segs value={sanity} color="#4CC9F0" /></div>
         </div>
-        <div className={`stat${health <= 20 ? ' beat' : ''}`}>
+        <div className={`stat${health < DANGER ? ' beat' : ''}`}>
           <Heart size={26} />
           <div><b><Count value={health} format={(n) => String(Math.round(n))} /></b><Segs value={health} color="#FF6FB5" /></div>
         </div>
@@ -132,6 +151,7 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
 
       <div className="meta">
         <span className="act" style={{ background: act.color }}>{state.endless ? 'Endless mode' : `${act.name} · ${act.note}`}</span>
+        <RentTag turn={state.turn} />
         <span className="week">{timeLabel(state.turn)}</span>
         <Track turn={state.turn} />
       </div>
@@ -141,6 +161,44 @@ function Hud({ state, char, env, place, index }: { state: GameState; char: Chara
       </div>
     </header>
   )
+}
+
+const SHOCK_SECONDS = 10
+
+/** Countdown for shock events. Pauses while the tab is hidden; calls onExpire once at zero. */
+function ShockTimer({ onExpire }: { onExpire: () => void }) {
+  const [left, setLeft] = useState(SHOCK_SECONDS)
+  const expire = useRef(onExpire)
+  useEffect(() => { expire.current = onExpire })
+  useEffect(() => {
+    let remaining = SHOCK_SECONDS * 1000
+    let last = Date.now()
+    const id = window.setInterval(() => {
+      const now = Date.now()
+      if (!document.hidden) remaining -= now - last
+      last = now
+      setLeft(Math.max(0, remaining / 1000))
+      if (remaining <= 0) { window.clearInterval(id); expire.current() }
+    }, 100)
+    return () => window.clearInterval(id)
+  }, [])
+  const secs = Math.ceil(left)
+  return (
+    <div className={`shock-timer${left <= 3 ? ' hot' : ''}`} role="timer" aria-label={`${secs} seconds left to choose`}>
+      <i style={{ width: `${(left / SHOCK_SECONDS) * 100}%` }} />
+      <b>{secs}s</b>
+    </div>
+  )
+}
+
+const outcomeText = (o: { cash: number; sanity: number; health: number }) =>
+  [o.cash && signedMoney(o.cash), o.sanity && `${signed(o.sanity)} Sanity`, o.health && `${signed(o.health)} Health`].filter(Boolean).join(', ')
+
+/** What each side of a coin flip pays out for this class (its passive trait is already folded in). */
+function flipLines(g: Gamble, t: PassiveTraits | null | undefined) {
+  const win = { ...g.win, cash: g.win.cash > 0 && t?.risk_cash_multiplier ? Math.round(g.win.cash * t.risk_cash_multiplier) : g.win.cash }
+  const lose = { ...g.lose, sanity: g.lose.sanity - (t?.failed_risk_sanity ?? 0) }
+  return { win: outcomeText(win), lose: outcomeText(lose), pct: Math.round(g.chance * 100) }
 }
 
 /** Bests are recorded by the effect in App as the run changes; the end screen only reads them. */
@@ -200,9 +258,25 @@ export default function App() {
   const gain = !!res && (res.sanity > 0 || res.health > 0 || res.cash > 0)
   const place = event?.location ?? char?.home_location ?? ''
   const status = state?.status
-  const lowVitals = !!state && state.status === 'playing' && (state.stats.sanity <= 20 || state.stats.health <= 20)
+  const lowVitals = !!state && state.status === 'playing' && (state.stats.sanity < DANGER || state.stats.health < DANGER || state.stats.cash < DANGER)
 
   useEffect(() => { preloadSfx() }, [])
+  useEffect(() => { trackVisit() }, [])
+
+  // One "finish" per run, even if the page is reloaded on the result screen.
+  const seed = state?.seed
+  const victory = state?.victory
+  const endless = state?.endless
+  useEffect(() => {
+    if (seed === undefined || (status !== 'finished' && status !== 'lost')) return
+    const kind = status === 'lost' ? 'lost' : victory ?? 'endurance'
+    const id = `${seed}:${endless ? 'e' : 'c'}:${kind}`
+    try {
+      if (localStorage.getItem('tss.finished') === id) return
+      localStorage.setItem('tss.finished', id)
+    } catch { /* count it anyway */ }
+    track('finish', { kind })
+  }, [seed, status, victory, endless])
 
   // Keep the personal bests (most days, most cash) up to date as the run changes.
   useEffect(() => { if (state) recordBest(state) }, [state])
@@ -234,11 +308,23 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [inRun])
 
+  // Shock events: when the countdown runs out the player is forced into the event's timeout choice.
+  const chooseRef = useRef(choose)
+  useEffect(() => { chooseRef.current = choose })
+  const shockLive = !!event?.shock && settings.shockTimer && state?.status === 'playing' && !state.lastResult
+  const timeoutPick = () => {
+    if (!event || !state) return
+    const first = event.timeout_choice ?? 'choice_b'
+    const other = first === 'choice_a' ? 'choice_b' : 'choice_a'
+    chooseRef.current(canChoose(state, event[first]) ? first : other)
+  }
+
   const days = event && state?.lastResult ? event[state.lastResult.choiceKey].metrics_impact.turns_consumed : 1
 
   return (
     <div className="app" data-act={state ? actForTurn(state.turn) : 0} style={{ '--act': act.color } as React.CSSProperties}>
       <Backdrop />
+      <SponsorTicker onSponsorClick={(name) => track('sponsor_click', { name })} />
       {state && <Doors key={`${state.turn}-${state.characterId}`} />}
       {lowVitals && <div className="vignette" aria-hidden="true" />}
       {state && char && <Hud state={state} char={char} env={env} place={place} index={index} />}
@@ -262,7 +348,7 @@ export default function App() {
             <ul className="classes">
               {characters.map((c, i) => (
                 <li key={c.class_id}>
-                  <button className="pick" style={{ '--theme': themeOf(c.class_id, i) } as React.CSSProperties} onClick={() => start(c.class_id)}>
+                  <button className="pick" style={{ '--theme': themeOf(c.class_id, i) } as React.CSSProperties} onClick={() => { track('start', { cls: c.class_id }); start(c.class_id) }}>
                     <span className="pick-face"><Avatar id={c.class_id} size={66} /></span>
                     <span className="pick-body">
                       <strong>{c.display_name}</strong>
@@ -280,14 +366,16 @@ export default function App() {
           </section>
         )}
 
-        {(state?.status === 'lost' || state?.status === 'finished') && <EndCard state={state} onReset={reset} onEndless={keepSurviving} />}
+        {(state?.status === 'lost' || state?.status === 'finished') && <EndCard state={state} onReset={reset} onEndless={() => { track('endless'); keepSurviving() }} />}
 
         {state?.status === 'playing' && (
           <section className={`event${state.lastResult && loss ? ' hit' : ''}`} key={`${state.turn}-${state.lastResult ? 'r' : 'q'}`}>
             {state.lastResult && (loss || gain) && <Burst gain={gain} loss={loss} hurtHealth={!!res && res.health < 0} />}
+            {state.notice && !state.lastResult && <p className="overnight" role="status">Overnight: {state.notice}</p>}
             {event ? (
               <>
-                <div className="card">
+                <div className={`card${event.shock ? ' shock' : ''}`}>
+                  {event.shock && <p className="shock-tag">Shock event</p>}
                   <Scene event={event} />
                   <p className="narrative">{event.scenario_text.replace(/^PLACEHOLDER:\s*/, '')}</p>
                   {(event.api_dependencies?.transit_delay_key || event.api_dependencies?.weather_severity_key) && (
@@ -298,6 +386,11 @@ export default function App() {
                 </div>
                 {state.lastResult ? (
                   <>
+                    {state.lastResult.flip && (
+                      <p className={`flip ${state.lastResult.flip}`} role="status">
+                        {state.lastResult.flip === 'win' ? 'The 50/50 landed your way!' : 'The 50/50 went against you.'}
+                      </p>
+                    )}
                     <div className="deltas" aria-label="Outcome">
                       <span className={`pop ${tone(state.lastResult.delta.cash)}`}><Coin size={22} />{signedMoney(state.lastResult.delta.cash)}</span>
                       <span className={`pop ${tone(state.lastResult.delta.sanity)}`}><Bolt size={22} />{signed(state.lastResult.delta.sanity)}</span>
@@ -307,14 +400,19 @@ export default function App() {
                   </>
                 ) : (
                   <div className="choices">
+                    {shockLive && <ShockTimer key={`${state.turn}-${event.event_id}`} onExpire={timeoutPick} />}
+                    {event.shock && !settings.shockTimer && <p className="shock-note">Countdown is off in Settings.</p>}
                     {(['choice_a', 'choice_b'] as const).map((k) => {
                       const c = event[k]
                       const ok = canChoose(state, c)
+                      const flip = c.gamble ? flipLines(c.gamble, state.traits) : null
                       return (
-                        <button key={k} className={`key choice ${k === 'choice_a' ? 'key-yellow' : 'key-mint'}`} disabled={!ok} onClick={() => { playSfx('click'); choose(k) }}>
+                        <button key={k} className={`key choice ${k === 'choice_a' ? 'key-yellow' : 'key-mint'}${flip ? ' risky' : ''}`} disabled={!ok} onClick={() => { playSfx('click'); choose(k) }}>
                           <b className="letter">{k === 'choice_a' ? 'A' : 'B'}</b>
                           <span className="ctext">
+                            {flip && <em className="stakes">High stakes · {flip.pct}/{100 - flip.pct}</em>}
                             {c.action_text}
+                            {flip && <small className="odds"><span>Win: {flip.win}</span><span>Lose: {flip.lose}</span></small>}
                             {c.metrics_impact.turns_consumed > 1 && <small>Takes {c.metrics_impact.turns_consumed} days</small>}
                             {c.required_inventory_item && <small>{ok ? 'Uses' : 'Needs'}: {c.required_inventory_item}</small>}
                           </span>
@@ -350,10 +448,11 @@ export default function App() {
       <footer className="footer">
         <button className="link" onClick={() => setShowSettings(true)}>Settings</button>
         <span aria-hidden="true"> · </span>
-        <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer">Sponsor this game</a>
+        <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer" onClick={() => track('sponsor_click', { name: 'footer' })}>Sponsor this game</a>
         <span aria-hidden="true"> · </span>
         <a href={REPORT_URL}>Report issue</a>
       </footer>
+      {DevPanel && <Suspense fallback={null}><DevPanel /></Suspense>}
       {showSettings && <SettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
     </div>
   )

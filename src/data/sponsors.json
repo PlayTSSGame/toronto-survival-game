@@ -1,0 +1,4 @@
+{
+  "_help": "Paid sponsors scroll in the banner at the top of the game. Add { \"name\": \"Brand\", \"text\": \"Short line\", \"url\": \"https://...\" } to this list. While it is empty, the placeholder line shows.",
+  "sponsors": []
+}

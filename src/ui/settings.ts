@@ -6,6 +6,8 @@ export interface Settings {
   large: boolean
   calm: boolean
   contrast: boolean
+  /** 10-second countdown on shock events. Off: they wait for you like any other day. */
+  shockTimer: boolean
 }
 
 const KEY = 'tss.settings.v1'
@@ -14,7 +16,7 @@ const prefersReducedMotion = () =>
   typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 function defaults(): Settings {
-  return { sound: true, vibration: true, large: false, calm: prefersReducedMotion(), contrast: false }
+  return { sound: true, vibration: true, large: false, calm: prefersReducedMotion(), contrast: false, shockTimer: true }
 }
 
 function load(): Settings {

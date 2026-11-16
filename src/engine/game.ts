@@ -9,8 +9,17 @@ export { FALLBACK_ENV }
 export const TOTAL_TURNS = 60
 export const DAYS_PER_ACT = 10
 export const ACT_COUNT = 6
-/** Events drawn this recently are skipped when the pool has run dry and has to recycle. */
-export const RECENT_MEMORY = 5
+/** No scenario comes back within this many plays. */
+export const COOLDOWN_DAYS = 20
+/** Used only when too few events are eligible to honour the full cooldown. */
+export const MIN_COOLDOWN = 5
+/** Share of draws taken from a class's own scenarios when it has some available. */
+export const CLASS_EVENT_SHARE = 0.6
+/** Shock events start no earlier than this day and then come every 4-5 days. */
+export const SHOCK_FIRST_DAY = 4
+export const SHOCK_GAP = 4
+/** Rent is due on every 15th day: $350, $400, then $450 from day 45 on. */
+export const RENT_EVERY = 15
 export const STAT_MAX = 100
 /** Opening act has no fatal triggers (earlier baseline); vitals floor at 1 through this turn. */
 export const ACT1_LAST_TURN = 10
@@ -29,6 +38,39 @@ export const NEGATIVE_CASH_EXTRA_PENALTY = 2
 
 export function dailyDrain(turn: number): number {
   return Math.round(BASE_DAILY_DRAIN * DRAIN_GROWTH ** turn)
+}
+
+export function rentForDay(day: number): number {
+  if (day < RENT_EVERY || day % RENT_EVERY !== 0) return 0
+  return day <= 15 ? 350 : day <= 30 ? 400 : 450
+}
+
+/**
+ * How much harder a choice hits on a given day. Days 21-40 hit sanity/health 25% harder, days 41-60
+ * hit cash 30% harder (that rate carries into endless mode), and every 10 endless days add 10% to both.
+ */
+export function pressure(turn: number): { vitals: number; cash: number } {
+  const steps = turn > TOTAL_TURNS ? 1 + Math.floor((turn - TOTAL_TURNS - 1) / 10) : 0
+  const extra = 1 + 0.1 * steps
+  return {
+    vitals: (turn >= 21 && turn <= 40 ? 1.25 : 1) * extra,
+    cash: (turn >= 41 ? 1.3 : 1) * extra,
+  }
+}
+
+/** Days between shock events: 4 or 5, fixed by the seed so a save replays the same way. */
+function shockGap(seed: number, last: number): number {
+  return SHOCK_GAP + (mulberry32(seed + last * 131)() < 0.5 ? 0 : 1)
+}
+
+export function isShockDay(state: GameState): boolean {
+  return state.turn >= SHOCK_FIRST_DAY && state.turn - state.lastShock >= shockGap(state.seed, state.lastShock)
+}
+
+function hashText(t: string): number {
+  let h = 2166136261
+  for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) }
+  return h >>> 0
 }
 
 /** Condo target = base × (1 + extra TTC impact + extra weather impact), i.e. modifiers above 1.00. */
@@ -76,28 +118,64 @@ export function newGame(char: CharacterClass, seed: number): GameState {
     lossReason: null,
     victory: null,
     endless: false,
-    recent: [],
+    recentScenarioIds: [],
+    lastShock: 0,
+    notice: null,
+    traits: char.passive_traits ?? null,
   }
 }
 
-/**
- * Events whose turn window contains the current day and that this run has not seen yet.
- * Once those run out the pool recycles: first events not drawn lately, then anything in the window.
- */
-export function eligibleEvents(state: GameState, events: EventsFile): GameEvent[] {
-  const inWindow = events.events_catalog.filter((e) => e.min_turn <= state.turn && state.turn <= e.max_turn)
-  const unseen = inWindow.filter((e) => !state.processedEvents.includes(e.event_id))
-  if (unseen.length) return unseen
-  const rested = inWindow.filter((e) => !state.recent.includes(e.event_id))
-  return rested.length ? rested : inWindow
+/** Draws from `list`: events outside the cooldown first, then ones not seen yet. Relaxes only if the list is tiny. */
+function poolFrom(list: GameEvent[], state: GameState): GameEvent[] {
+  const rested = list.filter((e) => !state.recentScenarioIds.includes(e.event_id))
+  const fresh = rested.filter((e) => !state.processedEvents.includes(e.event_id))
+  if (fresh.length) return fresh
+  if (rested.length) return rested
+  const lately = state.recentScenarioIds.slice(-MIN_COOLDOWN)
+  const loose = list.filter((e) => !lately.includes(e.event_id))
+  return loose.length ? loose : list
 }
 
-/** Deterministic for a given (seed, turn, history). Null only if no event covers this day. */
+/** Events this class can see today (unlocked, its own or general), split into shock, class-only and general. */
+function visible(state: GameState, events: EventsFile) {
+  const mine = events.events_catalog.filter(
+    (e) => e.min_turn <= state.turn && (!e.class_ids || e.class_ids.includes(state.characterId)),
+  )
+  return {
+    shock: mine.filter((e) => e.shock),
+    own: mine.filter((e) => !e.shock && e.class_ids),
+    general: mine.filter((e) => !e.shock && !e.class_ids),
+  }
+}
+
+/** The pool pickEvent draws from for this day (a shock day draws only shock events). */
+export function eligibleEvents(state: GameState, events: EventsFile): GameEvent[] {
+  const v = visible(state, events)
+  if (isShockDay(state) && v.shock.length) return poolFrom(v.shock, state)
+  const own = v.own.filter((e) => !state.recentScenarioIds.includes(e.event_id))
+  return [...poolFrom(v.general, state), ...own]
+}
+
+/**
+ * Deterministic for a given (seed, turn, history). Class-specific scenarios take 60% of draws while
+ * one is off cooldown; shock events take over every 4-5 days. Null only if nothing is unlocked.
+ */
 export function pickEvent(state: GameState, events: EventsFile): GameEvent | null {
-  const pool = eligibleEvents(state, events)
-  if (pool.length === 0) return null
+  const v = visible(state, events)
   const rng = mulberry32(state.seed + state.turn * 7919)
-  return pool[Math.floor(rng() * pool.length)]
+  const roll = rng()
+  const draw = (pool: GameEvent[]) => pool[Math.floor(rng() * pool.length)] ?? null
+  if (isShockDay(state) && v.shock.length) return draw(poolFrom(v.shock, state))
+  const own = poolFrom(v.own, state).filter((e) => !state.recentScenarioIds.includes(e.event_id))
+  if (own.length && roll < CLASS_EVENT_SHARE) return draw(own)
+  if (v.general.length) return draw(poolFrom(v.general, state))
+  return draw(own)
+}
+
+/** Draws today's event and records it if it is a shock. */
+function withEvent(state: GameState, events: EventsFile): GameState {
+  const ev = pickEvent(state, events)
+  return { ...state, currentEventId: ev?.event_id ?? null, lastShock: ev?.shock ? state.turn : state.lastShock }
 }
 
 export function canChoose(state: GameState, choice: Choice): boolean {
@@ -129,19 +207,34 @@ export function applyChoice(
   if (!canChoose(state, choice)) return state
 
   const m = choice.metrics_impact
-  let scale = 1
-  if (event.api_dependencies.transit_delay_key) {
-    scale *= char.passive_modifiers.ttc_delay_multiplier * ttcModifier(env.delayMinutes)
-  }
-  if (event.api_dependencies.weather_severity_key) {
-    scale *= char.passive_modifiers.weather_drain_multiplier * weatherModifier(env.tempC, env.precipMm)
-  }
-  const scaled = (v: number) => (v < 0 ? Math.round(v * scale) : v)
-
-  const delta: Stats = {
-    cash: m.cash_modifier,
-    sanity: scaled(m.sanity_modifier),
-    health: scaled(m.health_modifier),
+  let delta: Stats
+  let flip: 'win' | 'lose' | undefined
+  if (choice.gamble) {
+    // Seeded by run, day and scenario, so reloading the page cannot re-roll the flip.
+    const roll = mulberry32((state.seed ^ Math.imul(state.turn, 2654435761) ^ hashText(event.event_id)) >>> 0)()
+    flip = roll < choice.gamble.chance ? 'win' : 'lose'
+    const o = flip === 'win' ? choice.gamble.win : choice.gamble.lose
+    const t = char.passive_traits
+    delta = {
+      cash: flip === 'win' && o.cash > 0 && t?.risk_cash_multiplier ? Math.round(o.cash * t.risk_cash_multiplier) : o.cash,
+      sanity: o.sanity - (flip === 'lose' ? t?.failed_risk_sanity ?? 0 : 0),
+      health: o.health,
+    }
+  } else {
+    let scale = 1
+    if (event.api_dependencies.transit_delay_key) {
+      scale *= char.passive_modifiers.ttc_delay_multiplier * ttcModifier(env.delayMinutes)
+    }
+    if (event.api_dependencies.weather_severity_key) {
+      scale *= char.passive_modifiers.weather_drain_multiplier * weatherModifier(env.tempC, env.precipMm)
+    }
+    const hard = pressure(state.turn)
+    const vitals = (v: number) => (v < 0 ? Math.round(v * scale * hard.vitals) : v)
+    delta = {
+      cash: m.cash_modifier < 0 ? Math.round(m.cash_modifier * hard.cash) : m.cash_modifier,
+      sanity: vitals(m.sanity_modifier),
+      health: vitals(m.health_modifier),
+    }
   }
   const floor = state.turn <= ACT1_LAST_TURN ? 1 : 0
   const stats: Stats = {
@@ -160,8 +253,9 @@ export function applyChoice(
     stats,
     inventory,
     processedEvents: [...state.processedEvents, event.event_id],
-    recent: [...state.recent, event.event_id].slice(-RECENT_MEMORY),
-    lastResult: { eventId: event.event_id, choiceKey: key, delta },
+    recentScenarioIds: [...state.recentScenarioIds, event.event_id].slice(-COOLDOWN_DAYS),
+    notice: null,
+    lastResult: { eventId: event.event_id, choiceKey: key, delta, ...(flip ? { flip } : {}) },
     status,
     lossReason: reason,
     flags: { ...state.flags, [`played:${event.event_id}`]: true },
@@ -184,10 +278,26 @@ export function advanceTurn(state: GameState, events: EventsFile, env: Environme
   const days = state.endless ? spent : Math.min(spent, TOTAL_TURNS - state.turn + 1)
 
   let stats = state.stats
+  const notes: string[] = []
   for (let d = 0; d < days; d++) {
     const day = state.turn + d
-    // Daily stipend is paid as each day completes, before the overdraft check.
+    const floor0 = day <= ACT1_LAST_TURN ? 1 : 0
+    // Daily stipend is paid as each day completes, before rent and the overdraft check.
     if (state.stipend > 0) stats = { ...stats, cash: Math.round((stats.cash + state.stipend) * 100) / 100 }
+    const bonus = state.traits?.bonus_days
+    if (bonus && bonus.weekdays.includes(day % 7)) {
+      stats = {
+        cash: stats.cash + bonus.cash,
+        sanity: clamp(stats.sanity + bonus.sanity, floor0, STAT_MAX),
+        health: clamp(stats.health + bonus.health, floor0, STAT_MAX),
+      }
+      notes.push(`Payday from the door: +$${bonus.cash}, ${bonus.sanity} sanity, ${bonus.health} health`)
+    }
+    const rent = rentForDay(day)
+    if (rent > 0) {
+      stats = { ...stats, cash: Math.round((stats.cash - rent) * 100) / 100 }
+      notes.push(`Rent day: -$${rent}`)
+    }
     const penalty = dailyDrain(day) + (stats.cash < 0 ? NEGATIVE_CASH_EXTRA_PENALTY : 0)
     if (penalty > 0) {
       const floor = day <= ACT1_LAST_TURN ? 1 : 0
@@ -198,24 +308,23 @@ export function advanceTurn(state: GameState, events: EventsFile, env: Environme
       return { ...state, stats, turn: day, lastResult: null, currentEventId: null, status: 'lost', lossReason: out.reason }
     }
   }
-  const base: GameState = { ...state, stats, lastResult: null, currentEventId: null }
+  const notice = notes.length ? notes.join(' · ') : null
+  const base: GameState = { ...state, stats, lastResult: null, currentEventId: null, notice }
   if (!state.endless && state.turn + spent > TOTAL_TURNS) {
     const done: GameState = { ...base, turn: TOTAL_TURNS, status: 'finished' }
     return { ...done, victory: evaluateVictory(done, events, env) }
   }
 
-  const next = { ...base, turn: state.turn + spent }
-  return { ...next, currentEventId: pickEvent(next, events)?.event_id ?? null }
+  return withEvent({ ...base, turn: state.turn + spent }, events)
 }
 
 /** Starts the first event of a fresh game. */
 export function beginGame(state: GameState, events: EventsFile): GameState {
-  return { ...state, currentEventId: pickEvent(state, events)?.event_id ?? null }
+  return withEvent(state, events)
 }
 
 /** "Keep Surviving": continues a finished run past day 60 with no end date. */
 export function continueEndless(state: GameState, events: EventsFile): GameState {
   if (state.status !== 'finished') return state
-  const next: GameState = { ...state, status: 'playing', endless: true, victory: null, turn: TOTAL_TURNS + 1, lastResult: null }
-  return { ...next, currentEventId: pickEvent(next, events)?.event_id ?? null }
+  return withEvent({ ...state, status: 'playing', endless: true, victory: null, turn: TOTAL_TURNS + 1, lastResult: null, notice: null }, events)
 }

@@ -127,6 +127,63 @@
       },
       "description": "Pitching investors on King West while surviving on $7 iced lattes.",
       "daily_stipend": 50.0
+    },
+    {
+      "class_id": "CLASS_007_NIGHTLIFE_PROMOTER",
+      "display_name": "The King West Nightlife Promoter",
+      "home_location": "King St West",
+      "starting_stats": {
+        "cash": 120.0,
+        "sanity": 65,
+        "health": 70,
+        "current_turn": 1,
+        "inventory": [
+          "VIP Guestlist Clipboard",
+          "Double Espresso Shot"
+        ]
+      },
+      "passive_modifiers": {
+        "ttc_delay_impact": 1.0,
+        "weather_drain_multiplier": 1.0
+      },
+      "passive_traits": {
+        "bonus_days": {
+          "weekdays": [
+            6,
+            0
+          ],
+          "cash": 65,
+          "sanity": -10,
+          "health": -8
+        }
+      },
+      "description": "Runs VIP club guestlists on King St West by night, survives 8:30 AM lectures by day. Every 6th and 7th day pays a +$65 promotion bonus, at a cost of -10 Sanity and -8 Health.",
+      "daily_stipend": 45.0
+    },
+    {
+      "class_id": "CLASS_008_LUXURY_DATER",
+      "display_name": "The High-Stakes Luxury Dater & Side-Hustler",
+      "home_location": "Yorkville",
+      "starting_stats": {
+        "cash": 180.0,
+        "sanity": 60,
+        "health": 75,
+        "current_turn": 1,
+        "inventory": [
+          "Designer Clutch",
+          "Limited-Edition Sneaker Pass"
+        ]
+      },
+      "passive_modifiers": {
+        "ttc_delay_impact": 1.0,
+        "weather_drain_multiplier": 1.0
+      },
+      "passive_traits": {
+        "risk_cash_multiplier": 1.5,
+        "failed_risk_sanity": 15
+      },
+      "description": "Balances honours midterms with luxury Yorkville dinners, secret sneaker and ticket flips, and strict boundaries. Cash won on risky choices is 1.5x higher, but a failed risk costs -15 Sanity.",
+      "daily_stipend": 35.0
     }
   ]
 }

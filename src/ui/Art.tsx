@@ -107,6 +107,27 @@ export function Avatar({ id, size = 64, mood = 'happy', hurt = false }: { id: st
           <path d="M24 53l8 9 8-9z" fill="#fff" stroke="#121212" strokeWidth="2.5" strokeLinejoin="round" />
         </>
       )}
+      {kind === 'promoter' && (
+        <>
+          <circle cx="32" cy="36" r="19" {...FACE} />
+          <path d="M13 31c1-12 9-17 19-17s18 5 19 17c-7-4-12-5-19-5s-12 1-19 5z" fill="#121212" />
+          <rect x="15" y="32" width="15" height="9" rx="4" fill="#121212" />
+          <rect x="34" y="32" width="15" height="9" rx="4" fill="#121212" />
+          <path d="M30 35h4" stroke="#121212" strokeWidth="2.5" />
+          <path d="M20 35l4 2M38 35l4 2" stroke="#B8F34A" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="32" cy="57" r="3.2" fill="#FFD23F" stroke="#121212" strokeWidth="2" />
+        </>
+      )}
+      {kind === 'dater' && (
+        <>
+          <circle cx="32" cy="37" r="18" {...FACE} />
+          <path d="M12 38c-3-18 8-26 21-26s22 8 19 26c-1-8-6-14-14-15-6 4-14 5-22 4-3 2-4 6-4 11z" fill="#3B1F2B" />
+          <circle cx="15" cy="44" r="3" fill="#FFD23F" stroke="#121212" strokeWidth="2" />
+          <circle cx="49" cy="44" r="3" fill="#FFD23F" stroke="#121212" strokeWidth="2" />
+          <path d="M26 53c2 3 10 3 12 0" fill="none" stroke="#FF5E7E" strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M50 12l1.8 4 4 1.8-4 1.8L50 24l-1.8-4.4-4-1.8 4-1.8z" fill="#FFD23F" stroke="#121212" strokeWidth="1.4" />
+        </>
+      )}
       {kind === 'other' && (
         <circle cx="32" cy="34" r="20" {...FACE} />
       )}

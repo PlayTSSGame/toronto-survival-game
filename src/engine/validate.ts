@@ -1,4 +1,4 @@
-import type { CharactersFile, Choice, EventsFile, GameEvent, Stats } from '../types'
+import type { CharactersFile, Choice, EventsFile, GameEvent, Gamble, Outcome, PassiveTraits, Stats } from '../types'
 
 type Obj = Record<string, unknown>
 
@@ -56,6 +56,7 @@ export function parseCharacters(raw: unknown): CharactersFile {
       daily_stipend: c.daily_stipend === undefined ? 0 : num(c, 'daily_stipend', p),
       home_location: typeof c.home_location === 'string' && c.home_location ? c.home_location : 'Toronto',
       description: str(c, 'description', p),
+      passive_traits: parseTraits(c.passive_traits, `${p}.passive_traits`),
     }
   })
   if (classes.length === 0) fail('characters.classes', 'must not be empty')
@@ -64,6 +65,34 @@ export function parseCharacters(raw: unknown): CharactersFile {
     data_type: str(raw, 'data_type', 'characters'),
     classes,
   }
+}
+
+function parseOutcome(o: unknown, path: string): Outcome {
+  if (!isObj(o)) fail(path, 'expected object')
+  return { cash: num(o, 'cash', path), sanity: num(o, 'sanity', path), health: num(o, 'health', path) }
+}
+
+function parseGamble(g: unknown, path: string): Gamble {
+  if (!isObj(g)) fail(path, 'expected object')
+  const chance = num(g, 'chance', path)
+  if (chance <= 0 || chance >= 1) fail(`${path}.chance`, 'expected a number between 0 and 1')
+  return { chance, win: parseOutcome(g.win, `${path}.win`), lose: parseOutcome(g.lose, `${path}.lose`) }
+}
+
+function parseTraits(t: unknown, path: string): PassiveTraits | undefined {
+  if (t === undefined) return undefined
+  if (!isObj(t)) fail(path, 'expected object')
+  const out: PassiveTraits = {}
+  if (t.bonus_days !== undefined) {
+    if (!isObj(t.bonus_days)) fail(`${path}.bonus_days`, 'expected object')
+    const b = t.bonus_days
+    const days = arr(b, 'weekdays', `${path}.bonus_days`)
+    if (days.some((d) => !Number.isInteger(d) || (d as number) < 0 || (d as number) > 6)) fail(`${path}.bonus_days.weekdays`, 'expected integers 0-6')
+    out.bonus_days = { weekdays: days as number[], cash: num(b, 'cash', `${path}.bonus_days`), sanity: num(b, 'sanity', `${path}.bonus_days`), health: num(b, 'health', `${path}.bonus_days`) }
+  }
+  if (t.risk_cash_multiplier !== undefined) out.risk_cash_multiplier = num(t, 'risk_cash_multiplier', path)
+  if (t.failed_risk_sanity !== undefined) out.failed_risk_sanity = num(t, 'failed_risk_sanity', path)
+  return out
 }
 
 function parseChoice(c: unknown, path: string): Choice {
@@ -83,6 +112,7 @@ function parseChoice(c: unknown, path: string): Choice {
       turns_consumed: turns,
     },
     required_inventory_item: req,
+    ...(c.gamble !== undefined ? { gamble: parseGamble(c.gamble, `${path}.gamble`) } : {}),
   }
 }
 
@@ -106,6 +136,9 @@ function parseEvent(e: unknown, i: number): GameEvent {
     max_turn: max,
     image: typeof e.image === 'string' && e.image ? e.image : undefined,
     location: typeof e.location === 'string' && e.location ? e.location : undefined,
+    class_ids: Array.isArray(e.class_ids) ? (e.class_ids as unknown[]).map((x, j) => (typeof x === 'string' && x ? x : fail(`${p}.class_ids[${j}]`, 'expected string'))) : undefined,
+    shock: e.shock === true ? true : undefined,
+    timeout_choice: e.timeout_choice === 'choice_a' || e.timeout_choice === 'choice_b' ? e.timeout_choice : undefined,
     scenario_text: str(e, 'scenario_text', p),
     api_dependencies: deps,
     choice_a: parseChoice(e.choice_a, `${p}.choice_a`),
