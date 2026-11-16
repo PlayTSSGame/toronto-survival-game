@@ -9,6 +9,7 @@ import { Count } from './ui/Count'
 import { Doors } from './ui/Doors'
 import { makeResultPng, saveOrShare } from './ui/shareImage'
 import { SettingsPanel } from './ui/SettingsPanel'
+import { HowToPlay } from './ui/HowToPlay'
 import { useSettings } from './ui/settings'
 import { playNextDay, playSfx, preloadSfx, vibrate } from './ui/sound'
 import { moodFor } from './ui/mood'
@@ -251,6 +252,7 @@ export default function App() {
   const index = char ? characters.findIndex((c) => c.class_id === char.class_id) : 0
   const [showMap, setShowMap] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showHow, setShowHow] = useState(false)
   const [settings, updateSettings] = useSettings()
   const act = state ? ACTS[actForTurn(state.turn) - 1] : ACTS[1]
   const res = state?.lastResult?.delta
@@ -448,11 +450,14 @@ export default function App() {
       <footer className="footer">
         <button className="link" onClick={() => setShowSettings(true)}>Settings</button>
         <span aria-hidden="true"> · </span>
+        <button className="link" onClick={() => setShowHow(true)}>How to Play</button>
+        <span aria-hidden="true"> · </span>
         <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer" onClick={() => track('sponsor_click', { name: 'footer' })}>Sponsor this game</a>
         <span aria-hidden="true"> · </span>
         <a href={REPORT_URL}>Report issue</a>
       </footer>
       {DevPanel && <Suspense fallback={null}><DevPanel /></Suspense>}
+      {showHow && <HowToPlay onClose={() => setShowHow(false)} />}
       {showSettings && <SettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
     </div>
   )

@@ -307,3 +307,8 @@ html.contrast .ticker { background: #000; border-color: #fff; }
 .stat.neg { animation: danger-pulse 1s ease-in-out infinite; }
 @keyframes danger-pulse { 50% { background: #4A1B1B; } }
 .stat.jitter, .stat.beat { box-shadow: inset 0 0 0 2px var(--red); animation: danger-pulse 1s ease-in-out infinite; }
+
+.howto { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; counter-reset: h; }
+.howto li { counter-increment: h; display: grid; gap: 2px; padding-left: 34px; position: relative; text-align: left; }
+.howto li::before { content: counter(h); position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; background: #FFD23F; color: #111; font-weight: 900; display: grid; place-items: center; font-size: 13px; }
+.howto b { font-size: 14px; } .howto span { font-size: 13px; line-height: 1.4; opacity: .9; }
